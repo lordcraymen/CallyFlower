@@ -21,15 +21,17 @@ const withOnCall = <F extends (...args: any) => any>(
 ) => {
     throwIfNotCallable(callee);
 
-    return isSynchronous(callee)
-        ? (...args: Parameters<F>): ReturnType<F> => {
-            const modifiedCall = syncMerge({ callee, args, event: "onCall" }, onCall);
-            return modifiedCall.result ?? modifiedCall.callee(...modifiedCall.args);
-        }
-        : async (...args: Parameters<F>): Promise<ReturnType<F>> => {
-            const modifiedCall = await asyncMerge({ callee, args, event: "onCall" }, onCall);
-            return modifiedCall.result ?? modifiedCall.callee(...modifiedCall.args);
-        };
+    return !onCall
+        ? callee
+        : isSynchronous(callee)
+            ? (...args: Parameters<F>): ReturnType<F> => {
+                const modifiedCall = syncMerge({ callee, args, event: "onCall" }, onCall);
+                return modifiedCall.result ?? modifiedCall.callee(...modifiedCall.args);
+            }
+            : async (...args: Parameters<F>): Promise<ReturnType<F>> => {
+                const modifiedCall = await asyncMerge({ callee, args, event: "onCall" }, onCall);
+                return modifiedCall.result ?? modifiedCall.callee(...modifiedCall.args);
+            };
 };
 
 export { withOnCall };

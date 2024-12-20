@@ -2,6 +2,7 @@ import typescript from 'rollup-plugin-typescript2';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
+import tslib from 'tslib';
 
 export default {
   input: 'src/index.ts',
@@ -27,6 +28,9 @@ export default {
   plugins: [
     nodeResolve(),
     commonjs(),
-    typescript({ tsconfig: './tsconfig.json' })
+    typescript({
+      tsconfig: './tsconfig.json',
+      tslib
+    })
   ]
 };

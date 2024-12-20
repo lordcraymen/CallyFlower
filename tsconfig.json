@@ -1,12 +1,18 @@
 {
     "compilerOptions": {
-        "importHelpers": true,
+        "importHelpers": false,
         "target": "ES5",
         "module": "ESNext",
         "declaration": true,
         "outDir": "./dist",
         "strict": true,
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "baseUrl": ".",
+        "paths": {
+            "tslib": [
+                "./node_modules/tslib/tslib.d.ts"
+            ]
+        },
     },
     "include": [
         "src/**/*"
