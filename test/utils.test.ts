@@ -29,17 +29,14 @@ describe("isSynchronous", () => {
 });
 
 describe("syncMerge", () => {
-  it("should return the original result if the event handler does not return a result", () => {
-    const result = syncMerge({ callee: () => {}, args: [], caught: undefined, event: "onCatch" }, undefined);
-    expect(result).toBe(undefined);
+  it("should return the original data if the transformer function is nullish", () => {
+    const data = { test: "test" };
+    const { test } = syncMerge(data, undefined);
+    expect(test).toBe(data.test);
   });
 
-  it("should return the result from the event handler", () => {
-    const result = syncMerge({ callee: () => {}, args: [], caught: undefined, event: "onCatch" }, () => "result");
-    expect(result).toBe("result");
-  });
-
-  it("should throw the error from the event handler", () => {
-    expect(() => syncMerge({ callee: () => {}, args: [], caught: undefined, event: "onCatch" }, () => { throw new Error("error") })).toThrow();
+  it("should transform input using a transformer", () => {
+    const { test } = syncMerge({ test: "test" }, ({ test }) => ({ test: test + "ed" }));
+    expect(test).toBe("tested");
   });
 });
