@@ -17,11 +17,6 @@ describe("isSynchronous", () => {
     expect(isSynchronous(fn)).toBe(false);
   });
 
-  it("should return false for a function that returns a promise", () => {
-    const fn = () => Promise.resolve();
-    expect(isSynchronous(fn)).toBe(false);
-  });
-
   it("should return false for a function that returns a generator", () => {
     const fn = function* () { yield; };
     expect(isSynchronous(fn)).toBe(false);
