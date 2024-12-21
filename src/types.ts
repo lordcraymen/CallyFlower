@@ -1,7 +1,7 @@
 type OnCallHandlerOptions<F extends (...args: any) => any> = {
     callee: F;
     args: Parameters<F>;
-    result?: ReturnType<F>;
+    result?: ReturnType<F> | Promise<ReturnType<F>>;
     event: "onCall";
 };
 
@@ -9,7 +9,7 @@ type OnCatchHandlerOptions<F extends (...args: any) => any> =
     {
         callee: F;
         args: Parameters<F>;
-        result?: ReturnType<F>;
+        result?: ReturnType<F> | Promise<ReturnType<F>>;
         caught: any;
         event: "onCatch";
     };
@@ -18,7 +18,7 @@ type OnResultHandlerOptions<F extends (...args: any) => any> =
     {
         callee: F;
         args: Parameters<F>;
-        result: ReturnType<F>;
+        result: ReturnType<F> | Promise<ReturnType<F>>;
         event: "onResult";
     };
 

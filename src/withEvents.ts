@@ -8,7 +8,8 @@ type EventOptions<F extends (...args: any) => any> = {
   onCall?: OnCallHandler<F>;
   onResult?: OnResultHandler<F>;
   onCatch?: OnCatchHandler<F>;
-  onEvent?: (handler: (eventParams:any) => void) => void;
+  onEvent?: (eventParams: Object
+  ) => void;
 };
 
 /**
@@ -23,28 +24,34 @@ type EventOptions<F extends (...args: any) => any> = {
  * @returns {F} A new function that wraps the original function with the event handlers.
  */
 const withEvents = <F extends (...args: any) => any>(
-    callee: F,
-    options: EventOptions<F>
-  ): F => {
-    throwIfNotCallable(callee);
-    const { onCall, onResult, onCatch, onEvent } = options;
-  
-    const wrappedWithOnCall = withOnCall(callee, (onCallParams) => {
-      if (onCall) onCall(onCallParams);
-      if (onEvent) onEvent('onCall', onCallParams);
-    });
-  
-    const wrappedWithOnResult = withOnResult(wrappedWithOnCall, (onResultParams) => {
-      if (onResult) onResult({...onResultParams, callee});
-      if (onEvent) onEvent({...onResultParams, callee});
-    });
-  
-    const wrappedWithOnCatch = withOnCatch(wrappedWithOnResult, (onCatchParams) => {
-      if (onCatch) onCatch({...(onCatchParams), callee});
-      if (onEvent) onEvent({...onCatchParams, callee});
-    });
-  
-    return wrappedWithOnCatch;
-  };
+  callee: F,
+  options: EventOptions<F>
+): F => {
+  throwIfNotCallable(callee);
+  const { onCall, onResult, onCatch, onEvent } = options;
+
+  const wrappedWithOnCall = withOnCall(callee, (onCallParams) => {
+    if (onCall) onCall({...onCallParams, callee} as any);
+    if (onEvent) onEvent({...onCallParams, callee});
+  });
+
+  const wrappedWithOnResult = withOnResult(
+    wrappedWithOnCall,
+    (onResultParamters) => {
+      if (onResult) onResult({ ...onResultParamters, callee } as any);
+      if (onEvent) onEvent({ ...onResultParamters, callee });
+    }
+  );
+
+  const wrappedWithOnCatch = withOnCatch(
+    wrappedWithOnResult,
+    (onCatchParams) => {
+      if (onCatch) onCatch({ ...onCatchParams, callee } as any);
+      if (onEvent) onEvent({ ...onCatchParams, callee });
+    }
+  );
+
+  return wrappedWithOnCatch as F;
+};
 
 export { withEvents };

@@ -33,7 +33,7 @@ describe("withEvents", () => {
   });
 
   it("should short circuit the function with the result returned from the onCall event handler", () => {
-    const onCall = vi.fn(() => "result");
+    const onCall = vi.fn((params) => ({ result: "result" }));
     const wrapped = withEvents(vi.fn(), {onCall});
     const result = wrapped();
     expect(result).toBe("result");
@@ -54,7 +54,7 @@ describe("withEvents", () => {
   });
 
   it("should short circuit the function with the result returned from the onResult event handler", () => {
-    const onResult = vi.fn(() => "result");
+    const onResult = vi.fn((params) => ({ result: "result" }));
     const wrapped = withEvents(vi.fn(() => "result"), {onResult});
     const result = wrapped();
     expect(result).toBe("result");
