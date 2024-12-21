@@ -1,11 +1,12 @@
 {
   "name": "callyflower",
-  "version": "1.0.0",
+  "version": "0.9.0",
   "description": "A collection of lightweight higher order functions to add customizable event handling to a function execution flow.",
   "main": "dist/callyflower.cjs.js",
   "module": "dist/callyflower.esm.js",
   "browser": "dist/callyflower.min.js",
   "types": "dist/index.d.ts",
+  "sideeffects": false,
   "files": [
     "dist/**/*"
   ],
