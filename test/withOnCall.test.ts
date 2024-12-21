@@ -19,7 +19,7 @@ describe("withOnCall", () => {
     expect(() => withOnCall(1 as any)).toThrow();
   });
 
-  it("should call the onCall event handler", () => {
+  it("should call the onCall event handler for a synchronous function", () => {
     const onCall = vi.fn();
     const wrapped = withOnCall((p)=>p,onCall);
     wrapped("test");
@@ -32,7 +32,20 @@ describe("withOnCall", () => {
     );
   });
 
-  it("should pass the arguments to the onCall event handler", () => {
+  it("should call the onCall event handler for an async function", async () => {
+    const onCall = vi.fn();
+    const wrapped = withOnCall(async (p)=>p,onCall);
+    await wrapped("test");
+    expect(onCall).toHaveBeenCalledWith(
+      {
+        callee: expect.any(Function),
+        args: ["test"],
+        event: "onCall"
+      }
+    );
+  });
+
+  it("should pass the arguments to the onCall event handler for a synchronous function", () => {
     const spy = vi.fn();
     const originalFunction = vi.fn();
     const wrapped = withOnCall(originalFunction, spy);
@@ -40,11 +53,27 @@ describe("withOnCall", () => {
     expect(spy).toHaveBeenCalledWith({callee: originalFunction, args: ["test"], event: "onCall"});
   });
 
-  it("should short circuit the function with the result returned from the onCall event handler", () => {
+  it("should pass the arguments to the onCall event handler for an async function", async () => {
+    const spy = vi.fn();
+    const originalFunction = vi.fn(async (p:string) => p);
+    const wrapped = withOnCall(originalFunction, spy);
+    await wrapped("test");
+    expect(spy).toHaveBeenCalledWith({callee: originalFunction, args: ["test"], event: "onCall"});
+  });
+
+  it("should short circuit the function with the result returned from the onCall event handler for a synchronous function", () => {
     const onCall = () => ({result: "result"});
     const originalFunction = vi.fn();
     const wrapped = withOnCall(originalFunction, onCall);
     const result = wrapped("test");
+    expect(result).toBe("result");
+  });
+
+  it("should short circuit the function with the result returned from the onCall event handler for an async function", async () => {
+    const onCall = () => ({result: "result"});
+    const originalFunction = vi.fn(async (p:string) => p);
+    const wrapped = withOnCall(originalFunction, onCall as any);
+    const result = await wrapped("test");
     expect(result).toBe("result");
   });
 });
