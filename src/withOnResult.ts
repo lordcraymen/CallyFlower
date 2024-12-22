@@ -35,4 +35,5 @@ const withOnResult = <F extends (...args: any) => any>(
             };
 };
 
+
 export { withOnResult };
