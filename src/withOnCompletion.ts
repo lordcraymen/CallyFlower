@@ -39,7 +39,6 @@ type CallbackEventOptions<F extends (...args: any) => any> = {
 const withExecution = <F extends (...args: any) => any>(callee: F, callback: (params:Partial<CallbackEventOptions<F>>) => CallbackEventOptions<F>) => {
 
     return isSynchronous(callee) ? (...args: Parameters<F>): ReturnType<F> => {
-
         try {
             return callback({ event: "onExecution", callee, args }).result;
         } catch (error) {
