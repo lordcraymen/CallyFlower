@@ -41,7 +41,7 @@ const withExecution = <F extends (...args: any) => any>(callee: F, callback: (pa
     return isSynchronous(callee) ? (...args: Parameters<F>): ReturnType<F> => {
 
         try {
-            return callback({ event: "onCompletion", callee, args }).result;
+            return callback({ event: "onExecution", callee, args }).result;
         } catch (error) {
             const {caught, result} = callback({ event: "onCatch", callee, args, caught: error });
                 if (caught) {
@@ -53,7 +53,7 @@ const withExecution = <F extends (...args: any) => any>(callee: F, callback: (pa
     } : async (...args: Parameters<F>): Promise<ReturnType<F>> => {
         return new Promise((resolve, reject) => {
             try {
-                resolve(callback({ event: "onCompletion", callee, args }).result);
+                resolve(callback({ event: "onExecution", callee, args }).result);
             } catch (error) {
                 const {caught, result} = callback({ event: "onCatch", callee, args, caught: error });
                 if (caught) {
