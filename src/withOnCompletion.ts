@@ -27,5 +27,44 @@ const withOnCompletion = <F extends (...args: any) => any>(
             };
 }
 
+type CallbackEventOptions<F extends (...args: any) => any> = {
+    event: string;
+    callee: F;
+    args: Parameters<F>;
+    result: ReturnType<F>;
+    caught: unknown;
+}
+
+
+const withExecution = <F extends (...args: any) => any>(callee: F, callback: (params:Partial<CallbackEventOptions<F>>) => CallbackEventOptions<F>) => {
+
+    return isSynchronous(callee) ? (...args: Parameters<F>): ReturnType<F> => {
+
+        try {
+            return callback({ event: "onCompletion", callee, args }).result;
+        } catch (error) {
+            const {caught, result} = callback({ event: "onCatch", callee, args, caught: error });
+                if (caught) {
+                    throw caught;
+                } else {
+                    return result;
+                }
+        }
+    } : async (...args: Parameters<F>): Promise<ReturnType<F>> => {
+        return new Promise((resolve, reject) => {
+            try {
+                resolve(callback({ event: "onCompletion", callee, args }).result);
+            } catch (error) {
+                const {caught, result} = callback({ event: "onCatch", callee, args, caught: error });
+                if (caught) {
+                    reject(caught);
+                } else {
+                    resolve(result);
+                }
+            }
+        });
+    }
+}
+
 
 export { withOnCompletion };
