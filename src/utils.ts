@@ -10,7 +10,7 @@ const isCallable = (value: any): value is (...args: any) => any => value?.call =
  * @param func - The function to check
  * @returns {boolean} - True if the function is synchronous
  */
-const isSynchronous = <F extends (...args: any) => any>(func: F): boolean => isCallable(func) && func.constructor.name === "Function";
+const isSynchronous = <F extends Function>(func: F): boolean => isCallable(func) && func.constructor.name === "Function";
 
 /**
  * throw an error if the value is not a function
