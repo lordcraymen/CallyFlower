@@ -2,13 +2,70 @@ import { withExecution } from '../src/withExecution';
 import { vi } from 'vitest';
 
 describe('withExecution', () => {
-  it('should call onExecution handler', () => {
-    const callee = vi.fn(() => 42);
+  it('should call onExecution handler', async () => {
+    const callee = async () => 42;
     const onExecution = vi.fn((params) => ({ result: params.callee(...params.args) }));
     const wrapped = withExecution(callee, { onExecution });
-    const result = wrapped();
+    const result = await wrapped();
     expect(result).toBe(42);
     expect(onExecution).toHaveBeenCalled();
+  });
+
+  it('should wrap the fetch function', async () => {
+    const onExecution = vi.fn((params) => ({ result: params.callee(...params.args) }));
+    global.fetch = withExecution(global.fetch, { onExecution });
+    const response = await fetch('https://jsonplaceholder.typicode.com/todos/1');
+    const json = await response.json();
+    expect(json.userId).toBe(1);
+    expect(onExecution).toHaveBeenCalledWith({ 
+      event: 'onExecution',
+      callee: expect.any(Function),
+      args: ['https://jsonplaceholder.typicode.com/todos/1'] });
+  });
+
+  it('should monkeypatch a method that relies on the object context', () => {
+    const obj = {
+      value: 42,
+      getValue() {
+        return this.value;
+      }
+    };
+    const onExecution = vi.fn((params) => ({ result: params.callee(...params.args) }));
+    obj.getValue = withExecution(obj.getValue, { onExecution });
+    const result = obj.getValue();
+    expect(result).toBe(42);
+    expect(onExecution).toHaveBeenCalled();
+  });
+
+  it('should monkeypatch an async method that relies on the object context', async () => {
+    const obj = {
+      value: 42,
+      async getValue() {
+        return this.value;
+      }
+    };
+    const onExecution = vi.fn((params) => ({ result: params.callee(...params.args) }));
+    obj.getValue = withExecution(obj.getValue, { onExecution });
+    const result = await obj.getValue();
+    expect(result).toBe(42);
+    expect(onExecution).toHaveBeenCalled();
+  });
+
+  it('should have all the properties of the original function', () => {
+    function callee() { return 42; }
+    callee["prop"] = 'value';
+    const onExecution = vi.fn((params) => ({ result: params.callee(...params.args) }));
+    const wrapped = withExecution(callee, { onExecution });
+    expect(wrapped["prop"]).toBe('value');
+  });
+
+  it('should have the same prototype as the original function', () => {
+    function callee() { return 42; }
+    function Child() { }
+    callee.prototype = new Child();
+    const onExecution = vi.fn((params) => ({ result: params.callee(...params.args) }));
+    const wrapped = withExecution(callee, { onExecution });
+    expect(wrapped.prototype).toBeInstanceOf(Child);
   });
 
   it('should call onCatch handler', () => {
@@ -48,9 +105,9 @@ describe('withExecution', () => {
 
   it('should be possible to modify the result', () => {
     const callee = vi.fn(() => 42);
-    const onExecution = vi.fn((params) => ({ result: 43 }));
+    const onExecution = vi.fn((_) => ({ result: 43 }));
     const wrapped = withExecution(callee, { onExecution });
-    const result =  wrapped();
+    const result = wrapped();
     expect(result).toBe(43);
     expect(onExecution).toHaveBeenCalled();
   });
