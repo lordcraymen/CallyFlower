@@ -46,46 +46,4 @@ const withOnCompletion = <F extends (...args: any) => any>(
         };
 };
 
-type CallbackEventOptions<F extends (...args: any) => any> = {
-  event: string;
-  callee: F;
-  args: Parameters<F>;
-  result?: ReturnType<F>;
-  caught?: unknown;
-};
-
-const passThrough = (...args:any) => args;
-
-const withExecution = <F extends (...args: any) => any>(
-  callee: F,
-  handlers: { [handler:string] : (params:CallbackEventOptions<F>) => Partial<CallbackEventOptions<F>> } | undefined = {}
-) => {
-  throwIfNotCallable(callee);
-  const wrapped = Object.keys(handlers).length === 0 ? (...args:Parameters<F>) => callee(...args) : (async (...args: Parameters<F>) => {
-        try {
-          return await handlers.onExecution?.({ event: "onExecution", callee, args }).result || callee(...args);
-        } catch (error) {
-          const { caught, result } = handlers.onCatch?.({
-            event: "onCatch",
-            callee,
-            args,
-            caught: error,
-          }) || { caught: error };
-          if (caught) {
-            throw caught;
-          } else {
-            return result;
-          }
-        }
-      }) as F & { on?: (event: string, handler: (params: CallbackEventOptions<F>) => Partial<CallbackEventOptions<F>>) => F };
-  const trigger = (event: string, params: CallbackEventOptions<F>) => {};
-  wrapped.on = (event:string, handler: (params: CallbackEventOptions<F>,t:typeof trigger) => Partial<CallbackEventOptions<F>>) => {
-    return wrapped;
-  };
-  return wrapped;
-};
-
-
-const wrapped = withExecution(() => {})
-
 export { withOnCompletion };
