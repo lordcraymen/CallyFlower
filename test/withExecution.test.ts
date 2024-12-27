@@ -111,11 +111,11 @@ describe('withExecution', () => {
 
   it('should be possible to modify the result', () => {
     const callee = vi.fn(() => 42);
-    const onCall = vi.fn((_) => ({ result: 43 }));
-    const wrapped = withExecution(callee, { onCall });
+    const onReturn = vi.fn((_) => ({ result: 43 }));
+    const wrapped = withExecution(callee, { onReturn });
     const result = wrapped();
     expect(result).toBe(43);
-    expect(onCall).toHaveBeenCalled();
+    expect(onReturn).toHaveBeenCalled();
   });
 
   it('should be possible to overload the set method on a map with logging', () => {

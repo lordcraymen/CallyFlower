@@ -42,7 +42,7 @@ const withExecution = <F extends (...args: any) => any>(
         const callee = ((...args: Parameters<F>) => c.apply(this, args)) as F
         try {
           return _handleEvent({event: "onReturn", callee, args, handler: handlers.onReturn,
-            ..._handleEvent({event: "onCall", callee, args, handler: handlers.onCall})
+            ...(_handleEvent({event: "onCall", callee, args, handler: handlers.onCall}))
           }).result
         } catch (caughtValue) {
           return _handleCatch(handlers.onCatch, callee, args, caughtValue)
