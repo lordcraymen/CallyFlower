@@ -1,43 +1,4 @@
-import { throwIfNotCallable, isSynchronous } from "./utils"
-
-type CallbackEventOptions<F extends (...args: any) => any> = {
-  callee: F
-  args: Parameters<F>
-  result?: ReturnType<F>
-  caught?: unknown
-}
-
-/*
-
-const _handleEvent = <F extends (...args: any) => any>(
-  { handler, callee, args, result }: CallbackEventOptions<F> & {
-    handler?: (
-      params: CallbackEventOptions<F>
-    ) => Partial<CallbackEventOptions<F>> | void | undefined;
-  }
-) => {
-  const handlerResult = handler?.({callee, args, result });
-  return handlerResult && typeof handlerResult === "object" && "result" in handlerResult
-    ? handlerResult.result
-    : result ?? callee(...args);
-};
-
-
-
-const _handleCatch = <F extends (...args: any) => any>(
-  { handler, callee, args, caughtValue }:
-  {
-  handler?: (params: CallbackEventOptions<F>) => {result?: ReturnType<F>, caught?: unknown} | void,
-  callee: F,
-  args: Parameters<F>,
-  caughtValue: unknown}
-) => {
-  const { caught, result } = handler?.({ callee, args, caught: caughtValue}) || { caught: caughtValue }
-  if (caught) { throw caught}
-  return result
-}
-
-*/
+import { throwIfNotCallable } from "./utils"
 
 const withExecution = <F extends (...args: any) => any>(
   callee: F,
@@ -49,14 +10,15 @@ const withExecution = <F extends (...args: any) => any>(
       result?: ReturnType<F>, caught?: unknown} | void;
   } = {}
 ) => {
-  const wrapped = isSynchronous(callee)
-    ? function (this: any, ...args: Parameters<F>) {
-        let overload = { result: undefined, caught: undefined, callee, args } as CallbackEventOptions<F>
+  throwIfNotCallable(callee);
+  const wrapped = function (this: any, ...args: Parameters<F>) {
+        let overload: { result: ReturnType<F> | undefined, caught: unknown | undefined, callee: F, args: Parameters<F> }
+         = { result: undefined, caught: undefined, callee: callee.bind(this) as F, args }
         try {
           if(onCall) {
-            const {callee:onCallCallee, args:onCallArgs} = onCall.bind(this)({callee, args}) || overload
+            const {callee:onCallCallee, args:onCallArgs} = onCall.bind(this)({callee:overload.callee, args: overload.args}) || overload
             overload = {...overload, callee:onCallCallee || callee, args:onCallArgs || args}
-            if(typeof overload === "object" && "result" in overload) {
+            if("result" in overload) {
               return overload.result
             }
           }
@@ -82,17 +44,15 @@ const withExecution = <F extends (...args: any) => any>(
           return overload.result
         }
       }
-    : async function (this: any, ...args: Parameters<F>) {
-        const callee = ((...args: Parameters<F>) => c.apply(this, args)) as F
-        return Promise.resolve(_handleEvent({handler: onCall, callee, args}).result)
-        .then(result => _handleEvent({handler: onReturn, callee, args, result}).result)
-        .catch(caughtValue => _handleCatch({handler: onCatch, callee, args, caughtValue}))
-      }
+    
 
-  Object.setPrototypeOf(wrapped, Object.getPrototypeOf(c))
-  Object.defineProperties(wrapped, Object.getOwnPropertyDescriptors(c))
+  Object.setPrototypeOf(wrapped, Object.getPrototypeOf(callee))
+  Object.defineProperties(wrapped, Object.getOwnPropertyDescriptors(callee))
 
-  return wrapped as F
+  //if calee is an asynchrnous function, we need to wrap wrapped in an async function
+  return (callee as any)[Symbol.toStringTag] === "AsyncFunction" ? (async function(this: any, ...args: Parameters<F>) {
+    return wrapped.bind(this)(...args)
+  }) as any : wrapped as F
 }
 
 export { withExecution }
