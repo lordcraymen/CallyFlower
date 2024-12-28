@@ -41,13 +41,14 @@ const withExecution = <F extends (...args: any) => any>(
     onCall?: (params: CallbackEventOptions<F>) => Partial<CallbackEventOptions<F>> | void;
     onReturn?: (params: CallbackEventOptions<F>) => Partial<CallbackEventOptions<F>> | void;
     onCatch?: (params: CallbackEventOptions<F>) => {result?: ReturnType<F>, caught?: unknown} | void;
-  }
+  } = {}
 ) => {
   const wrapped = isSynchronous(c)
     ? function (this: any, ...args: Parameters<F>) {
         const callee = ((...args: Parameters<F>) => c.apply(this, args)) as F
         try {
           const onCallResult = _handleEvent({ callee, args, handler: onCall }) || {};
+          console.log("onCallResult", onCallResult);
           return _handleEvent({ callee, args, handler: onReturn, ...onCallResult }).result;
         } catch (caughtValue) {
           return _handleCatch({ handler: onCatch, callee, args, caughtValue });

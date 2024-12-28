@@ -2,11 +2,11 @@ import { withExecution } from '../src/withExecution';
 import { vi } from 'vitest';
 
 describe('withExecution', () => {
-  it('should call onCall handler', async () => {
-    const callee = async () => 42;
+  it('should call onCall handler', () => {
+    const callee = () => 42;
     const onCall = vi.fn((params) => ({ result: params.callee(...params.args) }));
     const wrapped = withExecution(callee, { onCall });
-    const result = await wrapped();
+    const result =  wrapped();
     expect(result).toBe(42);
     expect(onCall).toHaveBeenCalled();
   });
