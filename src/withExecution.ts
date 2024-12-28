@@ -7,6 +7,8 @@ type CallbackEventOptions<F extends (...args: any) => any> = {
   caught?: unknown
 }
 
+/*
+
 const _handleEvent = <F extends (...args: any) => any>(
   { handler, callee, args, result }: CallbackEventOptions<F> & {
     handler?: (
@@ -35,23 +37,49 @@ const _handleCatch = <F extends (...args: any) => any>(
   return result
 }
 
+*/
+
 const withExecution = <F extends (...args: any) => any>(
-  c: F,
+  callee: F,
   { onCall, onReturn, onCatch }: {
-    onCall?: (params: CallbackEventOptions<F>) => Partial<CallbackEventOptions<F>> | void;
-    onReturn?: (params: CallbackEventOptions<F>) => Partial<CallbackEventOptions<F>> | void;
-    onCatch?: (params: CallbackEventOptions<F>) => {result?: ReturnType<F>, caught?: unknown} | void;
+    onCall?: ({callee,args}:{callee:F, args:Parameters<F>}) => { callee?: F, args?: Parameters<F>, result?: ReturnType<F>} | void;
+    onReturn?: ({callee,args,result}:{callee:F, args:Parameters<F>, result:ReturnType<F>}
+    ) => { result?: ReturnType<F>} | void;
+    onCatch?: ({callee,args,caught}:{callee:F, args:Parameters<F>, caught:unknown}) => {
+      result?: ReturnType<F>, caught?: unknown} | void;
   } = {}
 ) => {
-  const wrapped = isSynchronous(c)
+  const wrapped = isSynchronous(callee)
     ? function (this: any, ...args: Parameters<F>) {
-        const callee = ((...args: Parameters<F>) => c.apply(this, args)) as F
+        let overload = { result: undefined, caught: undefined, callee, args } as CallbackEventOptions<F>
         try {
-          const onCallResult = _handleEvent({ callee, args, handler: onCall }) || {};
-          console.log("onCallResult", onCallResult);
-          return _handleEvent({ callee, args, handler: onReturn, ...onCallResult }).result;
+          if(onCall) {
+            const {callee:onCallCallee, args:onCallArgs} = onCall.bind(this)({callee, args}) || overload
+            overload = {...overload, callee:onCallCallee || callee, args:onCallArgs || args}
+            if(typeof overload === "object" && "result" in overload) {
+              return overload.result
+            }
+          }
+          
+          overload.result = overload.callee.apply(this, overload.args);
+
+          if(onReturn) {
+            const { result } = onReturn.bind(this)({callee:overload.callee, args:overload.args, result:overload.result!}) || overload
+            overload.result = result 
+          }
+          
+          return overload.result;
+
         } catch (caughtValue) {
-          return _handleCatch({ handler: onCatch, callee, args, caughtValue });
+          overload.caught = caughtValue
+          if(onCatch) {
+            const { result, caught } = onCatch.bind(this)({callee:overload.callee, args:overload.args, caught:overload.caught}) || overload
+            overload.result = result
+            overload.caught = caught
+          }
+          if(overload.caught) { throw overload.caught }
+          
+          return overload.result
         }
       }
     : async function (this: any, ...args: Parameters<F>) {
