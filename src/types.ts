@@ -1,48 +1,31 @@
-type OnCallHandlerOptions<F extends (...args: any) => any> = {
-    callee: F;
-    args: Parameters<F>;
-    result?: ReturnType<F> | Promise<ReturnType<F>>;
-    event: "onCall";
-};
+type Overload<F extends (...args: any) => any> = {
+    callee: F
+    args: Parameters<F>
+    result?: ReturnType<F>
+    caught?: any
+  }
+  
+  type onCall<F extends (...args: any) => any> = (params: { event: "onCall", callee: F, args: Parameters<F> }
+  ) => {
+    callee?: F
+    args?: Parameters<F>
+    result?: ReturnType<F>
+  } | void;
+  
+  type onReturn<F extends (...args: any) => any> = (
+    params: { event: "onReturn", callee: F, args: Parameters<F>, result: ReturnType<F> }) => {
+    result?: ReturnType<F> } | void
+  
+  type onCatch<F extends (...args: any) => any> = (
+    params: { event: "onCatch", callee: F, args: Parameters<F>, caught: unknown }) => {
+    caught?: any
+    result?: ReturnType<F>
+  } | void
+  
+  type Hooks<F extends (...args: any) => any> = {
+    onCall?: onCall<F>
+    onReturn?: onReturn<F>
+    onCatch?: onCatch<F>
+  }
 
-type OnCatchHandlerOptions<F extends (...args: any) => any> =
-    {
-        callee: F;
-        args: Parameters<F>;
-        result?: ReturnType<F> | Promise<ReturnType<F>>;
-        caught: unknown;
-        event: "onCatch";
-    };
-
-type OnCompletionHandlerOptions<F extends (...args: any) => any> =
-    {
-        callee: F;
-        args: Parameters<F>;
-        result: ReturnType<F> | undefined;
-        caught: unknown;
-        event: "onCompletion";
-    };
-
-type OnResultHandlerOptions<F extends (...args: any) => any> =
-    {
-        callee: F;
-        args: Parameters<F>;
-        result: ReturnType<F> | Promise<ReturnType<F>>;
-        event: "onResult";
-    };
-
-type OnErrorHandlerOptions<F extends (...args: any) => any> =
-    {
-        callee: F;
-        args: Parameters<F>;
-        result: ReturnType<F> | Promise<ReturnType<F>>;
-        caught: Error;
-        event: "onError";
-};
-
-type OnCallHandler<F extends (...args: any) => any> = (params: OnCallHandlerOptions<F>) => { result: ReturnType<F> } | void;
-type OnCompletionHandler<F extends (...args: any) => any> = (params: OnCompletionHandlerOptions<F>) => { result: ReturnType<F> } | void;
-type OnResultHandler<F extends (...args: any) => any> = (params: OnResultHandlerOptions<F>) => { result: ReturnType<F> } | { caught: any } | void;
-type OnCatchHandler<F extends (...args: any) => any> = (params: OnCatchHandlerOptions<F>) => Partial<OnCatchHandlerOptions<F>> | void;
-type OnErrorHandler<F extends (...args: any) => any> = (params: OnErrorHandlerOptions<F>) => Partial<OnErrorHandlerOptions<F>> | void;
-export { type OnCallHandler, type OnCompletionHandler, type OnResultHandler, type OnCatchHandler, type OnErrorHandler, type OnCallHandlerOptions, type OnResultHandlerOptions, type OnCatchHandlerOptions };
+  export { type Overload, type onCall, type onReturn, type onCatch, type Hooks }

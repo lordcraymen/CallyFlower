@@ -1,5 +1,3 @@
-import { withOnCall } from "./withOnCall";
-import { withOnResult } from "./withOnResult";
-import { withOnCatch } from "./withOnCatch";
+import { withExecution } from './withExecution';
 
-export { withOnCall, withOnResult, withOnCatch };
+export { withExecution };

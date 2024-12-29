@@ -1,37 +1,9 @@
 import { throwIfNotCallable } from "./utils"
+import { Hooks, Overload } from "./types"
 
-type Overload<F extends (...args: any) => any> = {
-  callee: F
-  args: Parameters<F>
-  result?: ReturnType<F>
-  caught?: any
-}
-
-type onCall<F extends (...args: any) => any> = (params: { event: "onCall", callee: F, args: Parameters<F> }
-) => {
-  callee?: F
-  args?: Parameters<F>
-  result?: ReturnType<F>
-} | void;
-
-type onReturn<F extends (...args: any) => any> = (
-  params: { event: "onReturn", callee: F, args: Parameters<F>, result: ReturnType<F> }) => {
-  result?: ReturnType<F> } | void
-
-type onCatch<F extends (...args: any) => any> = (
-  params: { event: "onCatch", callee: F, args: Parameters<F>, caught: unknown }) => {
-  caught?: any
-  result?: ReturnType<F>
-} | void
-
-type Hooks<F extends (...args: any) => any> = {
-  onCall?: onCall<F>
-  onReturn?: onReturn<F>
-  onCatch?: onCatch<F>
-}
-
-//This functions checks if the handler is present, if so it calls it and returns the result
-//If not, it returns the overload object filtering the "event" property
+/**
+ * Handle an event
+ */
 const _handle = <F extends (...args: any) => any>(
   event: string,
   overload: Overload<F>,
@@ -42,6 +14,12 @@ const _handle = <F extends (...args: any) => any>(
   return overloaded
 } 
 
+/**
+ * Wrap a function with execution hooks
+ * @param callee - The function to wrap
+ * @param hooks - The hooks to apply
+ * @returns The wrapped function
+ */
 const withExecution = <F extends (...args: any) => any>(
   callee: F,
   { onCall, onReturn, onCatch }: Hooks<F> = {}
