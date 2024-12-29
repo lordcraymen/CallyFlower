@@ -54,8 +54,6 @@ const withExecution = <F extends (...args: any) => any>(
         overload = { ...overload, ...tmp };
       }
 
-      console.log(overload.args);
-
       overload.result = overload.callee.apply(this, overload.args);
 
       if (onReturn) {
