@@ -10,11 +10,27 @@ describe('withExecution', () => {
     expect(result).toBe(42);
   });
 
+  it('should run normally for an async function if no handler is provided', async () => {
+    const callee = async () => 42;
+    const wrapped = withExecution(callee);
+    const result = await wrapped();
+    expect(result).toBe(42);
+  });
+
   it('should call onCall handler', () => {
     const callee = () => 42;
     const onCall = vi.fn((params) => ({ result: params.callee(...params.args) }));
     const wrapped = withExecution(callee, { onCall });
     const result =  wrapped();
+    expect(result).toBe(42);
+    expect(onCall).toHaveBeenCalled();
+  });
+
+  it('should call onCall for an async function', async () => {
+    const callee = async () => 42;
+    const onCall = vi.fn((params) => ({ result: params.callee(...params.args) }));
+    const wrapped = withExecution(callee, { onCall });
+    const result = await wrapped();
     expect(result).toBe(42);
     expect(onCall).toHaveBeenCalled();
   });
@@ -28,11 +44,29 @@ describe('withExecution', () => {
     expect(onCall).toHaveBeenCalled();
   });
 
+  it('should be possible to modify the result on call of an async function', async () => {
+    const callee = vi.fn(async () => 42);
+    const onCall = vi.fn((_) => ({ result: 43 }));
+    const wrapped = withExecution(callee, { onCall } as any);
+    const result = await wrapped();
+    expect(result).toBe(43);
+    expect(onCall).toHaveBeenCalled();
+  });
+
   it('should be possible to modify the arguments on call', () => {
     const callee = vi.fn((a:number, b:number) => a + b);
     const onCall = vi.fn(({args}:{args:[number,number]}) => ({ args: [args[0] * 2, args[1] * 2] }));
     const wrapped = withExecution(callee, { onCall} as any);
     const result = wrapped(2, 3);
+    expect(result).toBe(10);
+    expect(onCall).toHaveBeenCalled();
+  });
+
+  it('should be possible to modify the arguments on call of an async function', async () => {
+    const callee = vi.fn(async (a:number, b:number) => a + b);
+    const onCall = vi.fn(({args}:{args:[number,number]}) => ({ args: [args[0] * 2, args[1] * 2] }));
+    const wrapped = withExecution(callee, { onCall} as any);
+    const result = await wrapped(2, 3);
     expect(result).toBe(10);
     expect(onCall).toHaveBeenCalled();
   });
@@ -46,15 +80,24 @@ describe('withExecution', () => {
     expect(onReturn).toHaveBeenCalled();
   });
 
-  it('should wrap the fetch function', async () => {
-    const onCall = vi.fn((params) => ({ result: params.callee(...params.args) }));
-    global.fetch = withExecution(global.fetch, { onCall });
-    const response = await fetch('https://jsonplaceholder.typicode.com/todos/1');
+  it('should be possible to modify the result on return of an async function', async () => {
+    const callee = vi.fn(async () => 42);
+    const onReturn = vi.fn((_) => ({ result: 43 }));
+    const wrapped = withExecution(callee, { onReturn } as any);
+    const result = await wrapped();
+    expect(result).toBe(43);
+    expect(onReturn).toHaveBeenCalled();
+  });
+
+  it('should be possible to hook into an asynchrnounous function', async () => {
+    const onCall = vi.fn((params) => ({ args: params.args }));
+    global.fetch = withExecution(global.fetch, { onCall } as any);
+    const response = await fetch('https://jsonplaceholder.typicode.com/users/1/todos');
     const json = await response.json();
-    expect(json.userId).toBe(1);
+    expect(json.userId).toBe(2);
     expect(onCall).toHaveBeenCalledWith({
       callee: expect.any(Function),
-      args: ['https://jsonplaceholder.typicode.com/todos/1'] });
+      args: ['https://jsonplaceholder.typicode.com/users/1/todos'] });
   });
 
   it('should monkeypatch a method that relies on the object context', () => {
