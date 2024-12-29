@@ -16,19 +16,16 @@ const withExecution = <F extends (...args: any) => any>(
          = { result: undefined, caught: undefined, callee: callee.bind(this) as F, args }
         try {
           if(onCall) {
-            const {callee:onCallCallee, args:onCallArgs} = onCall.bind(this)({callee:overload.callee, args: overload.args}) || overload
-            overload = {...overload, callee:onCallCallee || callee, args:onCallArgs || args}
-            if("result" in overload) {
-              return overload.result
-            }
+            const tmp = {...overload, ...onCall.bind(this)({callee:overload.callee, args:overload.args}) || {}} 
+            if("result" in tmp) { return tmp.result }
+            overload = tmp
           }
-          
+
           overload.result = overload.callee.apply(this, overload.args);
 
           if(onReturn) {
-            const { result } = onReturn.bind(this)({callee:overload.callee, args:overload.args, result:overload.result!}) || overload
-            overload.result = result 
-          }
+            overload = {...overload, ...onReturn.bind(this)({callee:overload.callee, args:overload.args, result:overload.result!}) || {}}
+          } 
           
           return overload.result;
 

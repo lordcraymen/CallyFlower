@@ -2,6 +2,14 @@ import { withExecution } from '../src/withExecution';
 import { vi } from 'vitest';
 
 describe('withExecution', () => {
+
+  it('should run normally if no handler is provided', () => {
+    const callee = () => 42;
+    const wrapped = withExecution(callee);
+    const result =  wrapped();
+    expect(result).toBe(42);
+  });
+
   it('should call onCall handler', () => {
     const callee = () => 42;
     const onCall = vi.fn((params) => ({ result: params.callee(...params.args) }));
@@ -11,14 +19,40 @@ describe('withExecution', () => {
     expect(onCall).toHaveBeenCalled();
   });
 
+  it('should be possible to modify the result on call', () => {
+    const callee = vi.fn(() => 42);
+    const onCall = vi.fn((_) => ({ result: 43 }));
+    const wrapped = withExecution(callee, { onCall });
+    const result = wrapped();
+    expect(result).toBe(43);
+    expect(onCall).toHaveBeenCalled();
+  });
+
+  it('should be possible to modify the arguments on call', () => {
+    const callee = vi.fn((a:number, b:number) => a + b);
+    const onCall = vi.fn(({args,callee}:{callee:any, args:[number,number]}) => ({ callee, args: [args[0] * 2, args[1] * 2] }));
+    const wrapped = withExecution(callee, { onCall} as any);
+    const result = wrapped(2, 3);
+    expect(result).toBe(10);
+    expect(onCall).toHaveBeenCalled();
+  });
+
+  it('should be possible to modify the result on return', () => {
+    const callee = vi.fn(() => 42);
+    const onReturn = vi.fn((_) => ({ result: 43 }));
+    const wrapped = withExecution(callee, { onReturn });
+    const result = wrapped();
+    expect(result).toBe(43);
+    expect(onReturn).toHaveBeenCalled();
+  });
+
   it('should wrap the fetch function', async () => {
     const onCall = vi.fn((params) => ({ result: params.callee(...params.args) }));
     global.fetch = withExecution(global.fetch, { onCall });
     const response = await fetch('https://jsonplaceholder.typicode.com/todos/1');
     const json = await response.json();
     expect(json.userId).toBe(1);
-    expect(onCall).toHaveBeenCalledWith({ 
-      event: 'onCall',
+    expect(onCall).toHaveBeenCalledWith({
       callee: expect.any(Function),
       args: ['https://jsonplaceholder.typicode.com/todos/1'] });
   });
@@ -67,7 +101,6 @@ describe('withExecution', () => {
     const testChild = new ChildWithExecution(5);
     expect(testChild).toBeInstanceOf(Child);
     expect(onCall).toHaveBeenCalledWith({
-      event: 'onCall',
       callee: expect.any(Function),
       args: [5]
     });
@@ -86,7 +119,7 @@ describe('withExecution', () => {
     }
   });
 
-  it('should call onExecution and onCatch handler', () => {
+  it('should call onCall and onCatch handler', () => {
     const callee = vi.fn(() => { throw new Error('error') });
     const onCall = vi.fn((params) => ({ result: params.callee(...params.args) }));
     const onCatch = vi.fn((params) => ({ caught: params.caught }));
@@ -107,15 +140,6 @@ describe('withExecution', () => {
     const result =  wrapped();
     expect(result).toBeUndefined();
     expect(onCatch).toHaveBeenCalled();
-  });
-
-  it('should be possible to modify the result', () => {
-    const callee = vi.fn(() => 42);
-    const onReturn = vi.fn((_) => ({ result: 43 }));
-    const wrapped = withExecution(callee, { onReturn });
-    const result = wrapped();
-    expect(result).toBe(43);
-    expect(onReturn).toHaveBeenCalled();
   });
 
   it('should be possible to overload the set method on a map with logging', () => {
