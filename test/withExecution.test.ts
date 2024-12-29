@@ -30,7 +30,7 @@ describe('withExecution', () => {
 
   it('should be possible to modify the arguments on call', () => {
     const callee = vi.fn((a:number, b:number) => a + b);
-    const onCall = vi.fn(({args,callee}:{callee:any, args:[number,number]}) => ({ callee, args: [args[0] * 2, args[1] * 2] }));
+    const onCall = vi.fn(({args}:{args:[number,number]}) => ({ args: [args[0] * 2, args[1] * 2] }));
     const wrapped = withExecution(callee, { onCall} as any);
     const result = wrapped(2, 3);
     expect(result).toBe(10);
