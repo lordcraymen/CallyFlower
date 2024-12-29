@@ -4,26 +4,30 @@ type Overload<F extends (...args: any) => any> = {
   callee: F
   args: Parameters<F>
   result?: ReturnType<F>
-  caught?: unknown
+  caught?: any
 }
 
-type HandlerParams<F extends (...args: any) => any, E> = Overload<F> & { event: E }
+type onCall<F extends (...args: any) => any> = (params: { event: "onCall", callee: F, args: Parameters<F> }
+) => {
+  callee?: F
+  args?: Parameters<F>
+  result?: ReturnType<F>
+} | void;
 
-type OnCall<F extends (...args: any) => any> = (
-  params: HandlerParams<F,"onCall">
-) => Partial<Pick<Overload<F>, "callee" | "args" | "result">> | void;
+type onReturn<F extends (...args: any) => any> = (
+  params: { event: "onReturn", callee: F, args: Parameters<F>, result: ReturnType<F> }) => {
+  result?: ReturnType<F> } | void
 
-type OnReturn<F extends (...args: any) => any> = (params: Partial<Omit<HandlerParams<F,"onReturn">, "caught">> 
-) => Partial<Pick<Overload<F>, "result">> | void
+type onCatch<F extends (...args: any) => any> = (
+  params: { event: "onCatch", callee: F, args: Parameters<F>, caught: unknown }) => {
+  caught?: any
+  result?: ReturnType<F>
+} | void
 
-type OnCatch<F extends (...args: any) => any> = (params: 
-  Partial<Omit<HandlerParams<F,"onCatch">, "result">>
-) => Partial<Pick<Overload<F>, "result" | "caught">> | void
-
-interface Hooks<F extends (...args: any) => any> {
-  onCall?: OnCall<F>
-  onReturn?: OnReturn<F>
-  onCatch?: OnCatch<F>
+type Hooks<F extends (...args: any) => any> = {
+  onCall?: onCall<F>
+  onReturn?: onReturn<F>
+  onCatch?: onCatch<F>
 }
 
 //This functions checks if the handler is present, if so it calls it and returns the result
@@ -31,17 +35,12 @@ interface Hooks<F extends (...args: any) => any> {
 const _handle = <F extends (...args: any) => any>(
   event: string,
   overload: Overload<F>,
-  handler: (Hooks<F>)[keyof Hooks<F>]
+  handler: (...args: any) => any
 ): Overload<F> => {
-  if (handler) {
-    const tmp = handler({
-      ...overload,
-      event
-    });
-    if (tmp) return { ...overload, ...tmp };
-  }
-  return overload;
-};
+  if(!handler) return overload
+  const { event:e, ...overloaded} = handler ? {...overload, ...handler({ ...overload, event })} : overload
+  return overloaded
+} 
 
 const withExecution = <F extends (...args: any) => any>(
   callee: F,
