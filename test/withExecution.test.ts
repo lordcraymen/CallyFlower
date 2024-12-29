@@ -113,14 +113,17 @@ describe('withExecution', () => {
   });
 
   it('should be possible to hook into an asynchronous function', async () => {
-    const onCall = vi.fn(({args}) => ({ args: [args[0].replace(/users\/\d+/, 'users/4')] }));
-    global.fetch = withExecution(global.fetch, { onCall } as any);
-    const response = await fetch('https://jsonplaceholder.typicode.com/users/1/todos');
-    const json = await response.json();
-    expect(json[0].userId).toBe(4);
-    expect(onCall).toHaveBeenCalledWith({
-      callee: expect.any(Function),
-      args: ['https://jsonplaceholder.typicode.com/users/1/todos'] });
+    const callee = vi.fn(async () => 41);
+    const wrapped = withExecution(callee, { onReturn: ({result}) => ({ result: result.then(r => r+1) }) });
+    const result = await wrapped();
+    expect(result).toBe(42);
+  });
+
+  it('should return the original value if eventhndlers return void', () => {
+    const callee = vi.fn(() => 42);
+    const wrapped = withExecution(callee, { onCall: console.log, onReturn: console.log });
+    const result = wrapped();
+    expect(result).toBe(42);
   });
 
   it('should have all the properties of the original function', () => {
@@ -139,6 +142,7 @@ describe('withExecution', () => {
     const testChild = new ChildWithExecution(5);
     expect(testChild).toBeInstanceOf(Child);
     expect(onCall).toHaveBeenCalledWith({
+      event: "onCall",
       callee: expect.any(Function),
       args: [5]
     });
