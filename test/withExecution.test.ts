@@ -89,43 +89,38 @@ describe('withExecution', () => {
     expect(onReturn).toHaveBeenCalled();
   });
 
-  it('should be possible to hook into an asynchrnounous function', async () => {
-    const onCall = vi.fn((params) => ({ args: params.args }));
+  it('should call onCall and onCatch handler', () => {
+    const callee = vi.fn(() => { throw new Error('error') });
+    const onCall = vi.fn((params) => ({ result: params.callee(...params.args) }));
+    const onCatch = vi.fn((params) => ({ caught: params.caught }));
+    const wrapped = withExecution(callee, { onCall, onCatch });
+    try {
+       wrapped();
+    } catch (error) {
+      expect(error.message).toBe('error');
+      expect(onCall).toHaveBeenCalled();
+      expect(onCatch).toHaveBeenCalled();
+    }
+  });
+
+  it('should be possible to supress an error', () => {
+    const callee = vi.fn(() => { throw new Error('error') });
+    const onCatch = vi.fn(() => ({ caught: undefined }));
+    const wrapped = withExecution(callee, { onCatch });
+    const result =  wrapped();
+    expect(result).toBeUndefined();
+    expect(onCatch).toHaveBeenCalled();
+  });
+
+  it('should be possible to hook into an asynchronous function', async () => {
+    const onCall = vi.fn(({args}) => ({ args: [args[0].replace(/users\/\d+/, 'users/4')] }));
     global.fetch = withExecution(global.fetch, { onCall } as any);
     const response = await fetch('https://jsonplaceholder.typicode.com/users/1/todos');
     const json = await response.json();
-    expect(json.userId).toBe(2);
+    expect(json[0].userId).toBe(4);
     expect(onCall).toHaveBeenCalledWith({
       callee: expect.any(Function),
       args: ['https://jsonplaceholder.typicode.com/users/1/todos'] });
-  });
-
-  it('should monkeypatch a method that relies on the object context', () => {
-    const obj = {
-      value: 42,
-      getValue() {
-        return this.value;
-      }
-    };
-    const onCall = vi.fn((params) => ({ result: params.callee(...params.args) }));
-    obj.getValue = withExecution(obj.getValue, { onCall });
-    const result = obj.getValue();
-    expect(result).toBe(42);
-    expect(onCall).toHaveBeenCalled();
-  });
-
-  it('should monkeypatch an async method that relies on the object context', async () => {
-    const obj = {
-      value: 42,
-      async getValue() {
-        return this.value;
-      }
-    };
-    const onCall = vi.fn((params) => ({ result: params.callee(...params.args) }));
-    obj.getValue = withExecution(obj.getValue, { onCall });
-    const result = await obj.getValue();
-    expect(result).toBe(42);
-    expect(onCall).toHaveBeenCalled();
   });
 
   it('should have all the properties of the original function', () => {
@@ -150,40 +145,34 @@ describe('withExecution', () => {
     expect(testChild.age).toBe(10);
   });
 
-  it('should call onCatch handler', () => {
-    const callee = vi.fn(() => { throw new Error('error') });
-    const onCatch = vi.fn((params) => ({ caught: params.caught }));
-    const wrapped = withExecution(callee, { onCatch });
-    try {
-        wrapped();
-    } catch (error) {
-      expect(error.message).toBe('error');
-      expect(onCatch).toHaveBeenCalled();
-    }
+  it('should monkeypatch a method that relies on the object context', () => {
+    const obj = {
+      value: 42,
+      getValue() {
+        return this.value;
+      }
+    };
+    const onReturn = vi.fn(({result}) => ({ result: result + 1 }));
+    obj.getValue = withExecution(obj.getValue, { onReturn });
+    const result = obj.getValue();
+    expect(result).toBe(43);
+    expect(onReturn).toHaveBeenCalled();
   });
 
-  it('should call onCall and onCatch handler', () => {
-    const callee = vi.fn(() => { throw new Error('error') });
-    const onCall = vi.fn((params) => ({ result: params.callee(...params.args) }));
-    const onCatch = vi.fn((params) => ({ caught: params.caught }));
-    const wrapped = withExecution(callee, { onCall, onCatch });
-    try {
-       wrapped();
-    } catch (error) {
-      expect(error.message).toBe('error');
-      expect(onCall).toHaveBeenCalled();
-      expect(onCatch).toHaveBeenCalled();
-    }
-  });
-
-  it('should be possible to supress an error', () => {
-    const callee = vi.fn(() => { throw new Error('error') });
-    const onCatch = vi.fn(() => ({ caught: undefined }));
-    const wrapped = withExecution(callee, { onCatch });
-    const result =  wrapped();
-    expect(result).toBeUndefined();
-    expect(onCatch).toHaveBeenCalled();
-  });
+  it('should monkeypatch an async method that relies on the object context to return a different value', async () => {
+    const obj = {
+      value: 42,
+      async getValue() {
+        return this.value;
+      }
+    };
+    const onReturn = vi.fn(({result}) => ({ result: result.then(r => r+1) }));
+    obj.getValue = withExecution(obj.getValue, { onReturn });
+    const result = await obj.getValue();
+    expect(result).toBe(43);
+    expect(onReturn).toHaveBeenCalled();
+  }
+  );
 
   it('should be possible to overload the set method on a map with logging', () => {
     const consoleMock = vi.spyOn(console, 'log').mockImplementation(() => undefined);
