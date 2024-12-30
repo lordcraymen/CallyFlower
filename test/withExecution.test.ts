@@ -105,6 +105,24 @@ describe('withExecution', () => {
 
   it('should be possible to supress an error', () => {
     const callee = vi.fn(() => { throw new Error('error') });
+    const onCatch = vi.fn((p) => ({ caught: null, result: 43 }));
+    const wrapped = withExecution(callee, { onCatch });
+    const result =  wrapped();
+    expect(result).toBe(43);
+    expect(onCatch).toHaveBeenCalled();
+  });
+
+  it('should be possible to suprress an error in an async function', async () => {  
+    const callee = vi.fn(async () => { throw new Error('error') });
+    const onCatch = vi.fn((p) => ({ caught: null, result: 43 }));
+    const wrapped = withExecution(callee, { onCatch });
+    const result = await wrapped();
+    expect(result).toBe(43);
+    expect(onCatch).toHaveBeenCalled();
+  });
+
+  it('should be possible to supress an error on an async function', () => {
+    const callee = vi.fn(() => { throw new Error('error') });
     const onError = vi.fn((p) => ({ caught: undefined }));
     const onCatch = vi.fn((p) => p.caught instanceof Error ? onError?.(p) : p);
     const wrapped = withExecution(callee, { onCatch });
