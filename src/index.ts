@@ -1,5 +1,5 @@
 import { withExecution } from "./withExecution";
-import { onCall, onCatch, onReturn } from "./types";
+import { onCall, onCatch, onReturn, Overload } from "./types";
 
 const withOnCall = <F extends (...args: any) => any>(
     callee: F,
@@ -13,8 +13,8 @@ const withOnCatch = <F extends (...args: any) => any>(
 
 const withOnError = <F extends (...args: any) => any>(
     callee: F,
-    onError?: onCatch<F>
-    ) => withExecution(callee, onError && { onCatch: (p) => p.caught instanceof Error ? ((p.event = "onError" as any),onError(p)) : p });
+    onError?: ((p:Overload<F> & { event: "onError"}) => { caught?: unknown, result?: ReturnType<F>})
+    ) => withExecution(callee, { onCatch: (p) => onError && p.caught instanceof Error ? {...p, ...(onError({...p, event: "onError"})||{})} : p });
 
 const withOnReturn = <F extends (...args: any) => any>(
   callee: F,
@@ -23,8 +23,8 @@ const withOnReturn = <F extends (...args: any) => any>(
 
 const withOnResult = <F extends (...args: any) => any>(
   callee: F,
-  onResult?: onReturn<F>
-) => withExecution(callee, onResult && { onReturn: (p) => p.result && onResult(p) });
+  onResult?: ((p:Overload<F> & { event: "onResult"}) => { result?: ReturnType<F>})
+) => withExecution(callee, { onReturn: (p) => onResult && "result" in p ? {...p, ...(onResult({...p, event: "onResult"})||{})} : p });
 
 
 

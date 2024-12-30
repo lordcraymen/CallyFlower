@@ -18,41 +18,24 @@ describe('withOnError', () => {
   });
 
   it('should call onError handler', () => {
-    const callee = () => { throw new Error('test'); };
-    const onError = vi.fn((params) => ({ result: params.caught }));
-    const wrapped = withOnError(callee, onError);
-    const result =  wrapped();
-    expect(result).toBeInstanceOf(Error);
-    expect(onError).toHaveBeenCalled();
-  });
-
-  it('should call onError for an async function', async () => {
-    const callee = async () => { throw new Error('test'); };
-    const onError = vi.fn((params) => ({ caught: params.caught }));
-    const wrapped = withOnError(callee, onError);
-    const result = await wrapped();
-    expect(result).toBeInstanceOf(Error);
-    expect(onError).toHaveBeenCalled();
-  });
-
-  it('should be possible to modify the error on call', () => {
-    const callee = vi.fn(() => { throw new Error('test'); });
-    const onError = vi.fn((params) => ({ caught: new Error('modified') }));
-    const wrapped = withOnError(callee, onError);
+    const error = new Error("error");
+    const callee = () => { throw error };
+    const onError = vi.fn((params) => ({ caught: null, result: 43 }));
+    const wrapped = withOnError(callee, onError as any);
     const result = wrapped();
-    expect(result).toBeInstanceOf(Error);
-    expect(result.message).toBe('modified');
-    expect(onError).toHaveBeenCalled();
+    expect(result).toBe(43);
+    expect(onError).toHaveBeenCalledWith({ event: "onError", callee: expect.any(Function), args: [], caught: error });
   });
 
-  it('should be possible to modify the error on call of an async function', async () => {
-    const callee = vi.fn(async () => { throw new Error('test'); });
-    const onError = vi.fn((params) => ({ caught: new Error('modified') }));
-    const wrapped = withOnError(callee, onError);
-    const result = await wrapped();
-    expect(result).toBeInstanceOf(Error);
-    expect(result.message).toBe('modified');
-    expect(onError).toHaveBeenCalled();
+  it('should be possible to modify the Error on catch', () => {
+    const error = new Error("error");
+    const callee = () => { throw error };
+    const wrapped = withOnError(callee, ({caught}) => ({ caught: caught.message = "changed error", result: 43 }));
+    try {
+      wrapped();
+    } catch (e) {
+      expect(e).toBe("changed error");
+    }
   });
 
 });
