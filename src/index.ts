@@ -13,8 +13,8 @@ const withOnCatch = <F extends (...args: any) => any>(
 
 const withOnError = <F extends (...args: any) => any>(
     callee: F,
-    onError?: (p:Overload<F> & { event: "onError"}) => { caught?: unknown, result?: ReturnType<F>} | void
-    ) => withExecution(callee, { onCatch: (p) => onError && p.caught instanceof Error ? {...p, ...(onError({...p, event: "onError"})||{})} : p });
+    onError?: (params: { event: "onError", callee: F, args: Parameters<F>, caught: Error}) => { caught?: Error, result?: ReturnType<F>} | void
+    ) => withExecution(callee, { onCatch: (p) => onError && p.caught instanceof Error ? {...p, ...(onError({...p as any, event: "onError"})||{})} : p });
 
 const withOnReturn = <F extends (...args: any) => any>(
   callee: F,
