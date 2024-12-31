@@ -54,7 +54,7 @@ const withExecution = <F extends (...args: any) => any>(
   //if calee is an asynchrnous function, we need to wrap wrapped in an async function
   return (callee as any)[Symbol.toStringTag] === "AsyncFunction"
     ? (async function (this: any, ...args: Parameters<F>) {
-        return wrapped.bind(this)(...args)
+        return wrapped.apply(this, args)
       } as any)
     : (wrapped as F)
 }
