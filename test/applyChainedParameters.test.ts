@@ -28,4 +28,20 @@ describe('applyChainedParameters', () => {
     ]);
     expect(result).toBe(1);
   });
+
+  it('should apply then catch finally to a Promise', () => {
+    let tempResult = 0;
+    let error;
+    const result = applyChainedParams(Promise.resolve(2), [
+      { then: [(r: number) => ((tempResult = r+3),tempResult)] },
+      { then: [() => { throw new Error()}] },
+      { catch: [(e: Error) => (error = e,error)] },
+      { finally: [() => { throw { result: tempResult, error} }] },
+      { catch: [(v: unknown) => v] }
+    ]);
+    result.then((r) => { 
+      expect(r.result).toBe(5);
+      expect(r.error).toBeInstanceOf(Error);
+    } );
+  });
 });
