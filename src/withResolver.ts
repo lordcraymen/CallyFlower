@@ -1,21 +1,17 @@
 
 
 
-//this function should apply the key value pairs in the chainList to the expression
-//the chainList is an array of objects with keys and params
-//the key is the name of the function to be called on the expression
-//the params are the arguments to be passed to the function
-//the function should be called on the expression with the params
-function applyChainedParams<T extends Record<string | symbol, any>>(
-  expression: T,
-  chainList: Array<{ [K in keyof T]?: Parameters<T[K]> }>
-): ReturnType<T[keyof T]> | undefined {
-  return chainList.reduce((acc, chain) => {
-    const key = Object.keys(chain)[0] as keyof T;
-    const params = chain[key];
-      return acc[key](...(params || []));
-  }, expression) as ReturnType<T[keyof T]>;
+const popStackUntilNext = <A extends Array<any>>(chain:A, filterFunction: (entry: A[keyof A]) => boolean) => {
+  while (chain.length > 0) {
+    if (filterFunction(chain[chain.length - 1])) {
+      chain.pop();
+    } else {
+      break;
+    }
+  }
+  return chain;
 }
+  
 
 //this function tries to execute the then clauses until the end, 
 // when it catches it will skip forward to the closest catch clause
@@ -24,44 +20,51 @@ function applyChainedParams<T extends Record<string | symbol, any>>(
 //if there is no catch clause it will throw the caught error
 // the last then clause will return the result of the function
 function resolve(
-  target: any,
-  handlers:Array<Record<string|symbol,any>> // Array of handler objects
+  init: Function | Promise<any>,
+  callchain:Array<Record<"then"|"catch"|"fianlly",Array<any>>> = [] // Array of handler objects
 ) {
-
-  let curentIndex = 0;
+  let result;
+  let caught;
 
   try {
-    // Execute the target function with the provided arguments
-    let result = target[curentIndex](...handlers);
 
-    //if result is a Promise, apply the remaining handlers to it and return it
-    if(result instanceof Promise){
-      return applyChainedParams(result, handlers.slice(curentIndex+1));
+    // interate from the end of the callchain since its a stack
+    //check if result is a propise and then apply all remianing handlers to the promise
+    //else treat init as a function and apply the value of all then handlers as the parameters
+    //pop the last handler and apply it to the result, if the next handler is a catch clause
+    // then pop and discard it
+
+    while (callchain.length > 0) {
+      const [handler,value]  = Object.entries(callchain.pop() as any)[0] as [string, any];
+
+      if (init instanceof Promise && handler in init) {
+          result = (init as any)[handler](...value);
+      }
+      else {
+
+        result = (init as Function)(...value);
+
+        callchain = popStackUntilNext(callchain, (entry) => {
+          return Object.keys(entry)[0] === "catch";
+        });
+      } 
     }
 
-    curentIndex++;
-    // Find the next then handler, if available
-    const nextThenIndex = handlers.findIndex(h => h.then);
-
-    if (nextThenIndex === -1) {
-      return result; // No then handler left, return the result
-    }
-
-    // Isolate the next then handler and call resolve recursively
-    const [nextThenHandler, ...remainingHandlers] = handlers.splice(nextThenIndex, 1);
-    return resolve([nextThenHandler, ...remainingHandlers], result);
   } catch (error) {
-    // Find the next catch handler, if available
-    const nextCatchIndex = handlers.findIndex(h => h.catch);
-
-    if (nextCatchIndex === -1) {
-      throw error; // No catch handler left, throw the error
+    //loop and pop all methods until the catch clause, so that the catch clause is the first element
+    //of the remaining clauses. the handlers is a stack so work from the end
+    callchain = popStackUntilNext(callchain, (entry) => {
+      return Object.keys(entry)[0] !== "catch";
+    });
+    //if there is no catch clause, throw the error
+    if (callchain.length === 0) {
+      throw error;
     }
+    //pass the error as init and the remaining handlers to the resolve function
+    return resolve(() => error, callchain);
 
-    // Isolate the next catch handler and call resolve recursively
-    const [nextCatchHandler, ...remainingHandlers] = handlers.splice(nextCatchIndex, 1);
-    return resolve([nextCatchHandler, ...remainingHandlers], [error as Error]);
   }
+  return result;
 }
 
 
@@ -70,7 +73,7 @@ function withResolver<F extends (...args: any) => any>(callee: F) {
 
   function Resolver(this: any, ...args: Parameters<F>) {
     handlers.reverse();
-    return resolve(handlers, args);
+    return handlers;
   };
 
   Resolver.then = function (handler: (result: any) => any) {
@@ -85,8 +88,12 @@ function withResolver<F extends (...args: any) => any>(callee: F) {
 
   Resolver.finally = function (handler: (r: { result: ReturnType<F>; caught: unknown }) => any) {
     handlers.push({"finally":handler});
-    //only allow one finally clause
-    return (...args:Parameters<F>) => this(...args);
+    return {
+      catch: () => {
+        throw new Error("Cannot chain catch after finally");
+      },
+      call: this.call.bind(this),
+    }
   };
 
   return Resolver;
