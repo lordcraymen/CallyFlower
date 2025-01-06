@@ -72,7 +72,7 @@ function withResolver<F extends (...args: any) => any>(callee: F) {
 
   function Resolver(this: any, ...args: Parameters<F>) {
     handlers.reverse();
-    return handlers;
+    return resolve(callee, handlers);
   };
 
   Resolver.then = function (handler: (result: any) => any) {
