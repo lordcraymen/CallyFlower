@@ -4,9 +4,9 @@ import { vi } from 'vitest';
 describe('withResolver', () => {
     
   it('should run normally if no handler is provided', () => {
-    const callee = () => 42;
+    const callee = p => p;
     const wrapped = withResolver(callee);
-    const result =  wrapped();
+    const result =  wrapped(42);
     expect(result).toBe(42);
   });
 
