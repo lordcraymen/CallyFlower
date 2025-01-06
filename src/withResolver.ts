@@ -9,7 +9,7 @@ const popStackUntilNext = <A extends Array<any>>(chain:A, filterFunction: (entry
       break;
     }
   }
-  return chain;
+  return chain as A;
 }
   
 
@@ -41,26 +41,25 @@ function resolve(
           result = (init as any)[handler](...value);
       }
       else {
-
         result = (init as Function)(...value);
-
-        callchain = popStackUntilNext(callchain, (entry) => {
-          return Object.keys(entry)[0] === "catch";
-        });
+        callchain = popStackUntilNext(callchain, (entry) => Object.keys(entry)[0] !== "then" );
       } 
     }
 
   } catch (error) {
     //loop and pop all methods until the catch clause, so that the catch clause is the first element
     //of the remaining clauses. the handlers is a stack so work from the end
-    callchain = popStackUntilNext(callchain, (entry) => {
-      return Object.keys(entry)[0] !== "catch";
-    });
+    callchain = popStackUntilNext(callchain, (entry) => Object.keys(entry)[0] !== "catch" );
     //if there is no catch clause, throw the error
     if (callchain.length === 0) {
       throw error;
     }
-    //pass the error as init and the remaining handlers to the resolve function
+    
+    //convert the top of the callchain stafrom a catch to a then clause
+    //and apply the error to the catch clause
+    const [handler,value]  = Object.entries(callchain.pop() as any)[0] as [string, any];
+    result = (handler === "catch") ? (value[0] as Function)(error) : null; 
+
     return resolve(() => error, callchain);
 
   }
@@ -99,4 +98,4 @@ function withResolver<F extends (...args: any) => any>(callee: F) {
   return Resolver;
 }
 
-export { withResolver, applyChainedParams };
+export { withResolver };
