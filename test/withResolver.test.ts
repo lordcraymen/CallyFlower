@@ -29,8 +29,8 @@ describe('withResolver', () => {
   it('should call then for an async function', async () => {
     const callee = async (v:number) => v;
     const then = vi.fn((result) => 43);
-    const secondThen = vi.fn((result) => result + 1); 
-    const result = await withResolver(callee).then(then).then(secondThen)(42);
+    const secondThen = vi.fn((result) => {throw new Error('should not be called')}); 
+    const result = await withResolver(callee).then(then).then(secondThen).catch(e => 43)(42);
     expect(result).toBe(43);
     expect(then).toHaveBeenCalled();
     expect(secondThen).toHaveBeenCalledWith(43);
