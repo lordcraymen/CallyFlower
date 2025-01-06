@@ -21,7 +21,7 @@ const popStackUntilNext = <A extends Array<any>>(chain:A, filterFunction: (entry
 // the last then clause will return the result of the function
 function resolve(
   value: any,
-  callchain:Array<Record<"then"|"catch"|"fianlly",Array<any>>> = [] // Array of handler objects
+  callchain:Array<Record<"then"|"catch"|"finally",Array<any>>> = [] // Array of handler objects
 ) {
   let result;
   let caught;
@@ -35,13 +35,13 @@ function resolve(
     // then pop and discard it
 
     while (callchain.length > 0) {
-      const [handler,params]  = Object.entries(callchain.pop() as any)[0] as [string, any];
+      const [handlertype,handler]  = Object.entries(callchain.pop() as any)[0] as [string, any];
 
-      if (value instanceof Promise && handler in value) {
-          value = (value as any)[handler](...params);
+      if (value instanceof Promise && handlertype in value) {
+          value = (value as any)[handlertype](...handler);
       }
       else {
-        value = params(...value);
+        value = handler(...value);
         callchain = popStackUntilNext(callchain, (entry) => Object.keys(entry)[0] !== "then" );
       } 
     }
@@ -55,12 +55,11 @@ function resolve(
       throw error;
     }
     
-    //convert the top of the callchain stafrom a catch to a then clause
-    //and apply the error to the catch clause
-    const [handler,value]  = Object.entries(callchain.pop() as any)[0] as [string, any];
-    result = (handler === "catch") ? (value[0] as Function)(error) : null; 
+    //convert the top of the callchain from a catch to a then clause
+    const [handlertype,handler]  = Object.entries(callchain.pop() as any)[0] as [string, any];
+    callchain.push({"then":handler} as any);
 
-    return resolve(() => error, callchain);
+    return resolve(error, callchain);
 
   }
   return result;
