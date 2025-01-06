@@ -20,7 +20,7 @@ const popStackUntilNext = <A extends Array<any>>(chain:A, filterFunction: (entry
 //if there is no catch clause it will throw the caught error
 // the last then clause will return the result of the function
 function resolve(
-  init: Function | Promise<any>,
+  value: any,
   callchain:Array<Record<"then"|"catch"|"fianlly",Array<any>>> = [] // Array of handler objects
 ) {
   let result;
@@ -35,13 +35,13 @@ function resolve(
     // then pop and discard it
 
     while (callchain.length > 0) {
-      const [handler,value]  = Object.entries(callchain.pop() as any)[0] as [string, any];
+      const [handler,params]  = Object.entries(callchain.pop() as any)[0] as [string, any];
 
-      if (init instanceof Promise && handler in init) {
-          result = (init as any)[handler](...value);
+      if (value instanceof Promise && handler in value) {
+          value = (value as any)[handler](...params);
       }
       else {
-        result = (init as Function)(...value);
+        value = params(...value);
         callchain = popStackUntilNext(callchain, (entry) => Object.keys(entry)[0] !== "then" );
       } 
     }
@@ -72,7 +72,7 @@ function withResolver<F extends (...args: any) => any>(callee: F) {
 
   function Resolver(this: any, ...args: Parameters<F>) {
     handlers.reverse();
-    return resolve(callee, handlers);
+    return resolve(args, handlers);
   };
 
   Resolver.then = function (handler: (result: any) => any) {
