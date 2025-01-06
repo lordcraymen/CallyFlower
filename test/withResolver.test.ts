@@ -27,12 +27,13 @@ describe('withResolver', () => {
   });
 
   it('should call then for an async function', async () => {
-    const callee = async () => 42;
-    const then = vi.fn((result) => result);
-    const wrapped = withResolver(callee).then(then);
-    const result = await wrapped();
-    expect(result).toBe(42);
+    const callee = async (v:number) => v;
+    const then = vi.fn((result) => 43);
+    const secondThen = vi.fn((result) => result + 1); 
+    const result = await withResolver(callee).then(then).then(secondThen)(42);
+    expect(result).toBe(43);
     expect(then).toHaveBeenCalled();
+    expect(secondThen).toHaveBeenCalledWith(43);
   });
 
   it('should call catch handler', () => {
@@ -46,10 +47,11 @@ describe('withResolver', () => {
 
   it('should call catch for an async function', async () => {
     const callee = async () => { throw new Error('error') };
-    const catchFn = vi.fn((error) => error);
+    const catchFn = vi.fn((error) => {error.message = 'overloaded error'; return error});
     const wrapped = withResolver(callee).catch(catchFn);
     const result = await wrapped();
     expect(result).toBeInstanceOf(Error);
+    expect(result.message).toBe('overloaded error');
     expect(catchFn).toHaveBeenCalled();
   });
 
