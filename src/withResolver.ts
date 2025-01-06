@@ -41,7 +41,7 @@ function resolve(
           value = (value as any)[handlertype](...handler);
       }
       else {
-        value = handler(...value);
+        value = [handler(...value)];
         callchain = popStackUntilNext(callchain, (entry) => Object.keys(entry)[0] !== "then" );
       } 
     }
@@ -51,6 +51,7 @@ function resolve(
     //of the remaining clauses. the handlers is a stack so work from the end
     callchain = popStackUntilNext(callchain, (entry) => Object.keys(entry)[0] !== "catch" );
     //if there is no catch clause, throw the error
+
     if (callchain.length === 0) {
       throw error;
     }
@@ -59,15 +60,15 @@ function resolve(
     const [handlertype,handler]  = Object.entries(callchain.pop() as any)[0] as [string, any];
     callchain.push({"then":handler} as any);
 
-    return resolve(error, callchain);
+    return resolve([error], callchain);
 
   }
-  return result;
+  return value[0];
 }
 
 
 function withResolver<F extends (...args: any) => any>(callee: F) {
-  const handlers: Array<Record<string|symbol,any>> = [callee]
+  const handlers: Array<Record<string|symbol,any>> = [{"then": callee}]
 
   function Resolver(this: any, ...args: Parameters<F>) {
     handlers.reverse();
@@ -86,12 +87,7 @@ function withResolver<F extends (...args: any) => any>(callee: F) {
 
   Resolver.finally = function (handler: (r: { result: ReturnType<F>; caught: unknown }) => any) {
     handlers.push({"finally":handler});
-    return {
-      catch: () => {
-        throw new Error("Cannot chain catch after finally");
-      },
-      call: this.call.bind(this),
-    }
+    return this;
   };
 
   return Resolver;
