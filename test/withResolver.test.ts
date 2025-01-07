@@ -29,12 +29,12 @@ describe('withResolver', () => {
 
   it('should call a then chain for an async function', async () => {
     const callee = async (v:number) => v;
-    const then = vi.fn((p) => p);
+    const then = vi.fn((p) => p * 2);
     const secondThen = vi.fn((result) => result * 2); 
     const result = await withResolver(callee).then(then).then(secondThen)(5);
-    expect(result).toBe(10);
-    expect(then).toHaveBeenCalled();
-    expect(secondThen).toHaveBeenCalledWith(5);
+    expect(result).toBe(20);
+    expect(then).toHaveBeenCalledWith(5);
+    expect(secondThen).toHaveBeenCalledWith(10);
   });
 
   it('should call catch handler', () => {
