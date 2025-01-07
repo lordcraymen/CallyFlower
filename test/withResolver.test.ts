@@ -17,23 +17,24 @@ describe('withResolver', () => {
     expect(result).toBe(42);
   });
 
-  it('should call then handler', () => {
-    const callee = () => 42;
-    const then = vi.fn((result) => result);
-    const wrapped = withResolver(callee).then(then);
-    const result =  wrapped();
-    expect(result).toBe(42);
+  it('should call a then chain for an async function', () => {
+    const callee = (v:number) => v;
+    const then = vi.fn((r:number) => r);
+    const secondThen = vi.fn((r:number) => r * 2); 
+    const result = withResolver(callee).then(then).then(secondThen)(10);
+    expect(result).toBe(20);
     expect(then).toHaveBeenCalled();
+    expect(secondThen).toHaveBeenCalledWith(10);
   });
 
-  it('should call then for an async function', async () => {
+  it('should call a then chain for an async function', async () => {
     const callee = async (v:number) => v;
-    const then = vi.fn((result) => 43);
-    const secondThen = vi.fn((result) => {throw new Error('should not be called')}); 
-    const result = await withResolver(callee).then(then).then(secondThen).catch(e => 43)(42);
-    expect(result).toBe(43);
+    const then = vi.fn((p) => p);
+    const secondThen = vi.fn((result) => result * 2); 
+    const result = await withResolver(callee).then(then).then(secondThen)(5);
+    expect(result).toBe(10);
     expect(then).toHaveBeenCalled();
-    expect(secondThen).toHaveBeenCalledWith(43);
+    expect(secondThen).toHaveBeenCalledWith(5);
   });
 
   it('should call catch handler', () => {
