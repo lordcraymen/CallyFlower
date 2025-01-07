@@ -55,8 +55,7 @@ describe('withResolver', () => {
     expect(result.message).toBe('overloaded error');
     expect(catchFn).toHaveBeenCalled();
   });
-
-  
+ 
   it('should call finally handler', () => {
     const callee = (_p:number) => 42;
     const finallyFn = vi.fn(() => {});
@@ -74,5 +73,19 @@ describe('withResolver', () => {
     expect(result).toBe(42);
     expect(finallyFn).toHaveBeenCalled();
     });
+
+
+  it('should call all handlers in the correct order', () => {
+    const callee = (v:number) => v;
+    const then = vi.fn((r:number) => r);
+    const catchFn = vi.fn((error) => error);
+    const finallyFn = vi.fn(() => {});
+    const wrapped = withResolver(callee).then(then).catch(catchFn).finally(finallyFn);
+    const result =  wrapped(42);
+    expect(result).toBe(42);
+    expect(then).toHaveBeenCalled();
+    expect(catchFn).not.toHaveBeenCalled();
+    expect(finallyFn).toHaveBeenCalled();
+  });
 
 });
