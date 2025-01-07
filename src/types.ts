@@ -13,8 +13,8 @@ type Overload<F extends (...args: any) => any> = {
   } | void;
   
   type onReturn<F extends (...args: any) => any> = (
-    params: { event: "onReturn", callee: F, args: Parameters<F>, result: ReturnType<F> }) => {
-    result?: ReturnType<F> } | void
+    params: { event: "onReturn", callee: F, args: Parameters<F>, result: ReturnType<F>, caught:unknown }) => {
+    result?: ReturnType<F>, caught?:unknown } | void
   
   type onCatch<F extends (...args: any) => any> = (
     params: { event: "onCatch", callee: F, args: Parameters<F>, caught: unknown }) => {
