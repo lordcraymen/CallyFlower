@@ -12,6 +12,7 @@ function resolve(
   try {
    for (let i = 0; i < handlerChain.length; i++) {
       if (handlerChain[i][0] === "catch") { continue }
+      if (handlerChain[i][0] === "finally") { (handlerChain[i][1] as any)(); continue }
       value = (handlerChain[i][1] as any)(...value);
       if (value instanceof Promise) {
         return handlerChain.reduce((acc, h) =>  (acc as any)[h[0]](h[1]), value);
