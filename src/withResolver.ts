@@ -22,7 +22,7 @@ function resolve(
   } catch (error) {
     //pop until next catch
     while (handlerChain.length > 0) {
-      if (handlerChain[handlerChain.length][0] !== "catch") {
+      if (handlerChain[handlerChain.length-1][0] !== "catch") {
         handlerChain.pop();
       }
     }
