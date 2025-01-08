@@ -2,6 +2,8 @@ import { throwIfNotCallable } from "./utils"
 import { withResolver } from "./withResolver"
 import { Hooks } from "./types"
 
+const throwValue = (error: any) => { throw error }
+
 /**
  * Wrap a function with execution hooks
  * @param callee - The function to wrap
@@ -22,9 +24,15 @@ const withExecution = <F extends (...args: any) => any>(
   
   onCall ? wrapped.then((args) => onCall({ event: "onCall", callee, args })) : wrapped.then(callee)
   
-  onCatch && wrapped.catch((caught) => onCatch({ event: "onCatch", callee, args, caught }))
+  onCatch && wrapped.catch((caught) => { 
+    const handledCaught = onCatch({ event: "onCatch", callee, args, caught })
+    return handledCaught !== undefined ? handledCaught : throwValue(caught) 
+  })
 
-  onResult && wrapped.then((result) => onResult({ event: "onReturn", callee, args, result, caught }))
+  onResult && wrapped.then((result) => { 
+    const handleResult = onResult({ event: "onReturn", callee, args, result, caught })
+    return handleResult !== undefined ? handleResult : result
+ })
 
   onCleanup && wrapped.finally(() => onCleanup({ event: "onCleanup", callee, args, caught }))
 
