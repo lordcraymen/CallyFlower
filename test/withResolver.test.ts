@@ -126,6 +126,30 @@ describe('withResolver', () => {
     expect(finallyFn).toHaveBeenCalled();
   });
 
+  it('it should apply all handlers if at somepoint in the callchain a promise is returned', async () => {
+    const callee = async (v:number) => v;
+    const then = vi.fn((r:number) => Promise.resolve(r));
+    const catchFn = vi.fn((error) => error);
+    const finallyFn = vi.fn(() => {});
+    const wrapped = withResolver(callee).then(then).catch(catchFn).finally(finallyFn);
+    const result = await wrapped(42);
+    expect(result).toBe(42);
+    expect(then).toHaveBeenCalled();
+    expect(catchFn).not.toHaveBeenCalled();
+    expect(finallyFn).toHaveBeenCalled();
+  });
 
+  it('it should apply all handlers if at somepoint in the callchain a promise is returned and an error is thrown', async () => {
+    const callee = async (v:number) => v;
+    const then = vi.fn((r:number) => Promise.reject(new Error('error')));
+    const catchFn = vi.fn((error) => error);
+    const finallyFn = vi.fn(() => {});
+    const wrapped = withResolver(callee).then(then).catch(catchFn).finally(finallyFn);
+    const result = await wrapped(42);
+    expect(result).toBeInstanceOf(Error);
+    expect(then).toHaveBeenCalled();
+    expect(catchFn).toHaveBeenCalled();
+    expect(finallyFn).toHaveBeenCalled();
+  });
 
 });

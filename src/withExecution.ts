@@ -10,16 +10,23 @@ import { Hooks } from "./types"
  */
 const withExecution = <F extends (...args: any) => any>(
   callee: F,
-  { onCall, onReturn, onCatch }: Hooks<F> = {}
+  { onCall, onResult, onCatch, onCleanup }: Hooks<F> = {}
 ) => {
   throwIfNotCallable(callee)
   let caught: any
   let args: any
-  const wrapped = withResolver((...params) => {
-    args = params
-    return onCall ? onCall({ event: "onCall", callee, args }) : callee(...params)
-  }).catch((caught) => onCatch ? onCatch({ event: "onCatch", callee, args, caught }) : caught)
-  .then((result) => onReturn ? onReturn({ event: "onReturn", callee, args, result, caught }) : result)
+
+  const getArgs = (...a:any) => (args = a, args)
+
+  const wrapped = withResolver(getArgs)
+  
+  onCall ? wrapped.then((args) => onCall({ event: "onCall", callee, args })) : wrapped.then(callee)
+  
+  onCatch && wrapped.catch((caught) => onCatch({ event: "onCatch", callee, args, caught }))
+
+  onResult && wrapped.then((result) => onResult({ event: "onReturn", callee, args, result, caught }))
+
+  onCleanup && wrapped.finally(() => onCleanup({ event: "onCleanup", callee, args, caught }))
 
   Object.setPrototypeOf(wrapped, Object.getPrototypeOf(callee))
   Object.defineProperties(wrapped, Object.getOwnPropertyDescriptors(callee))

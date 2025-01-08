@@ -22,7 +22,7 @@ describe('withOnError', () => {
     const callee = () => { throw error };
     const onError = vi.fn((params) => ({ caught: null, result: 43 }));
     const wrapped = withOnError(callee, onError as any);
-    const result = wrapped();
+    const {caught, result} = wrapped();
     expect(result).toBe(43);
     expect(onError).toHaveBeenCalledWith({ event: "onError", callee: expect.any(Function), args: [], caught: error });
   });
@@ -32,7 +32,7 @@ describe('withOnError', () => {
     const callee = () => { throw error };
     const onError = vi.fn((params) => ({ caught: null, result: 43 }));
     const wrapped = withOnError(callee, onError as any);
-    const result = await wrapped();
+    const {caught, result} = await wrapped();
     expect(result).toBe(43);
     expect(onError).toHaveBeenCalledWith({ event: "onError", callee: expect.any(Function), args: [], caught: error });
   });

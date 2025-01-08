@@ -10,14 +10,16 @@ function resolve(
   handlerChain: HandlerChain = []
 ) {
   try {
-   for (let i = 0; i < handlerChain.length; i++) {
-      if (handlerChain[i][0] === "catch") { continue }
-      if (handlerChain[i][0] === "finally") { (handlerChain[i][1] as any)(); continue }
-      value = (handlerChain[i][1] as any)(...value);
+   let index = 0;
+   for (const [type, handler] of handlerChain) {
+      if (type === "catch") { continue }
+      if (type === "finally") { handler(); continue }
+      value = handler(...value);
       if (value instanceof Promise) {
-        return handlerChain.reduce((acc, h) =>  (acc as any)[h[0]](h[1]), value);
+        return handlerChain.splice(index).reduce((acc, [t,h]) =>  (acc as any)[t](h), value);
       }
       value = [value];
+      index++;
     }
   } catch (error) {
     const index = handlerChain.findIndex(([t]) => t === "catch");
