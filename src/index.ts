@@ -1,5 +1,5 @@
 import { withExecution } from "./withExecution";
-import { onCall, onCatch, onReturn, Overload } from "./types";
+import { onCall, onCatch, onResult, Overload } from "./types";
 
 const withOnCall = <F extends (...args: any) => any>(
     callee: F,
@@ -18,14 +18,13 @@ const withOnError = <F extends (...args: any) => any>(
 
 const withOnReturn = <F extends (...args: any) => any>(
   callee: F,
-  onReturn?: onReturn<F>
-) => withExecution(callee, { onReturn });
+  onResult?: onResult<F>
+) => withExecution(callee, { onResult });
 
-const withOnResult = <F extends (...args: any) => any>(
+const withOnCleanup = <F extends (...args: any) => any>(
   callee: F,
-  onResult?: ((p:Overload<F> & { event: "onResult"}) => { result?: ReturnType<F>})
-) => withExecution(callee, { onReturn: (p) => onResult && "result" in p ? {...p, ...(onResult({...p, event: "onResult"})||{})} : p });
+  onCleanup?: (params: { event: "onCleanup", callee: F, args: Parameters<F>, caught: any }) => void
+) => withExecution(callee, { onCleanup });
 
 
-
-export { withExecution, withOnCall, withOnCatch, withOnReturn, withOnError, withOnResult };
+export { withExecution, withOnCall, withOnCatch, withOnReturn, withOnError, withOnCleanup };

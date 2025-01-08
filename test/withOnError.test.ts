@@ -48,4 +48,15 @@ describe('withOnError', () => {
     }
   });
 
+  it('should not change the outcome if a void function (like console.log is used as a handler ', () => {
+    const error = new Error("error");
+    const callee = () => { throw error };
+    const wrapped = withOnError(callee, console.log);
+    try {
+      wrapped();
+    } catch (e) {
+      expect(e).toBe(error);
+    }
+  });
+
 });

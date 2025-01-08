@@ -19,7 +19,7 @@ describe('withExecution', () => {
 
   it('should call onCall handler', () => {
     const callee = () => 42;
-    const onCall = vi.fn((params) => ({ result: params.callee(...params.args) }));
+    const onCall = vi.fn();
     const wrapped = withExecution(callee, { onCall });
     const result =  wrapped();
     expect(result).toBe(42);
@@ -28,11 +28,11 @@ describe('withExecution', () => {
 
   it('should call onCall for an async function', async () => {
     const callee = async () => 42;
-    const onCall = vi.fn((params) => ({ result: params.callee(...params.args) }));
-    const wrapped = withExecution(callee, { onCall });
+    const spy = vi.fn();
+    const wrapped = withExecution(callee, { onCall: ({callee,args}) => (spy(),callee(...args)) });
     const result = await wrapped();
     expect(result).toBe(42);
-    expect(onCall).toHaveBeenCalled();
+    expect(spy).toHaveBeenCalled();
   });
 
   it('should be possible to modify the result on call', () => {
