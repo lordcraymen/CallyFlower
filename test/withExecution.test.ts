@@ -73,8 +73,8 @@ describe('withExecution', () => {
 
   it('should be possible to modify the result on return', () => {
     const callee = vi.fn(() => 42);
-    const onResult = vi.fn((_) => 43 );
-    const wrapped = withExecution(callee, { onResult });
+    const onResult = vi.fn();
+    const wrapped = withExecution(callee, { onResult: (p) => ({ result: 43 }) });
     const result = wrapped();
     expect(result).toBe(43);
     expect(onResult).toHaveBeenCalled();
@@ -135,7 +135,7 @@ describe('withExecution', () => {
 
   it('should be possible to hook into an asynchronous function', async () => {
     const callee = vi.fn(async () => 41);
-    const wrapped = withExecution(callee, { onResult: ({result}) => ({ result: result.then(r => r+1) }) });
+    const wrapped = withExecution(callee, { onResult: ({result}) => result.then(r => r+1) });
     const result = await wrapped();
     expect(result).toBe(42);
   });
