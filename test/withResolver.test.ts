@@ -152,4 +152,13 @@ describe('withResolver', () => {
     expect(finallyFn).toHaveBeenCalled();
   });
 
+  it("should be able to monkeypatch a method of an object like Map", () => {
+    const map = new Map();
+    const set = vi.fn((p) => p);
+    map.set = withResolver(map.set).then(set).catch(console.error);
+    map.set(1,2);
+    expect(map.get(1)).toBe(2);
+    expect(set).toHaveBeenCalledWith(map);
+  });
+
 });

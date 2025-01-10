@@ -22,7 +22,7 @@ const withExecution = <F extends (...args: any) => any>(
 
   const wrapped = withResolver(getArgs)
   
-  onCall ? wrapped.then((args) => onCall({ event: "onCall", callee, args })) : wrapped.then(callee)
+  onCall ? wrapped.then((args) => onCall({ event: "onCall", callee, args })) : wrapped.then((...args) => callee(...args))
   
   onCatch && wrapped.catch((caught) => { 
     const handledCaught = onCatch({ event: "onCatch", callee, args, caught })
