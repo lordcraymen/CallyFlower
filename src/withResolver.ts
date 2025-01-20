@@ -46,7 +46,6 @@ function withResolver<F extends (...args: any) => any>(callee: F) {
   const handlers: HandlerChain = [["then", callee]];
 
   function Resolver(this: any, ...args: Parameters<F>) {
-    console.log("handlers", handlers);
     return resolve(args, handlers, this) as ReturnType<F>;
   }
 
