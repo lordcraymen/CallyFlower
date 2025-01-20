@@ -45,7 +45,7 @@ const withExecution = <F extends (...args: any) => any>(
 
   
 
-  return returnFunction as F
+  return wrapped
 }
 
 export { withExecution }
