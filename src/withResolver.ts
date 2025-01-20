@@ -5,6 +5,13 @@ type Handler =
 
 type HandlerChain = Handler[];
 
+type ResolverType<F extends (...args: any) => any, R> = {
+  (this: any, ...args: Parameters<F>): R;
+  then<T>(handler: (result: R) => T): ResolverType<F, T>;
+  catch<T>(handler: (error: any) => T): ResolverType<F, T>;
+  finally(handler: () => void): void;
+};
+
 function resolve(
   value: Array<any>,
   handlerChain: HandlerChain = [],
@@ -35,20 +42,21 @@ function resolve(
 }
 
 function withResolver<F extends (...args: any) => any>(callee: F) {
+
   const handlers: HandlerChain = [["then", callee]];
 
   function Resolver(this: any, ...args: Parameters<F>) {
-    return resolve(args, handlers, this);
+    return resolve(args, handlers, this) as ReturnType<F>;
   }
 
-  Resolver.then = function (handler: (result: any) => any) {
+  Resolver.then = function <T>(handler: (result: ReturnType<F>) => T): ResolverType<F,T> {
     handlers.push(["then", handler]);
-    return this;
+    return this as any as ResolverType<F,T>;
   };
 
-  Resolver.catch = function (handler: (caught: unknown) => any) {
+  Resolver.then = function <T>(handler: (result: ReturnType<F>) => T): ResolverType<F,T> {
     handlers.push(["catch", handler]);
-    return this;
+    return this as any as ResolverType<F,T>;
   };
 
   Resolver.finally = function (handler: () => void) {
