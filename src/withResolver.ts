@@ -46,6 +46,7 @@ function withResolver<F extends (...args: any) => any>(callee: F) {
   const handlers: HandlerChain = [["then", callee]];
 
   function Resolver(this: any, ...args: Parameters<F>) {
+    console.log("handlers", handlers);
     return resolve(args, handlers, this) as ReturnType<F>;
   }
 
@@ -54,7 +55,7 @@ function withResolver<F extends (...args: any) => any>(callee: F) {
     return this as any as ResolverType<F,T>;
   };
 
-  Resolver.then = function <T>(handler: (result: ReturnType<F>) => T): ResolverType<F,T> {
+  Resolver.catch = function <T>(handler: (result: ReturnType<F>) => T): ResolverType<F,T> {
     handlers.push(["catch", handler]);
     return this as any as ResolverType<F,T>;
   };
