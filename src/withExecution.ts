@@ -16,6 +16,7 @@ const withExecution = <F extends (...args: any) => any>(
   throwIfNotCallable(callee)
   let caught: any
   let args: any
+  let result: any
 
   const getArgs = (...a:any) => {
     args = a
@@ -31,12 +32,18 @@ const withExecution = <F extends (...args: any) => any>(
 
   onResult && wrapped.then((result) => onResult({ event: "onReturn", callee, args, result, caught }));
 
+  wrapped.then((r) => { result = r; return r; })
+
   onCleanup && wrapped.finally(() =>  { onCleanup({ event: "onCleanup", callee, args, caught }) });
 
-  Object.setPrototypeOf(wrapped, Object.getPrototypeOf(callee))
-  Object.defineProperties(wrapped, Object.getOwnPropertyDescriptors(callee))
+  function returnFunction (...args: Parameters<F>) {
+    return wrapped(...args)
+  }
 
-  return wrapped
+  Object.setPrototypeOf(returnFunction, Object.getPrototypeOf(callee))
+  Object.defineProperties(returnFunction, Object.getOwnPropertyDescriptors(callee))
+
+  return returnFunction as F
 }
 
 export { withExecution }
