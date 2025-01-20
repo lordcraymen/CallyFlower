@@ -36,12 +36,14 @@ const withExecution = <F extends (...args: any) => any>(
 
   onCleanup && wrapped.finally(() =>  { onCleanup({ event: "onCleanup", callee, args, caught }) });
 
+  Object.setPrototypeOf(wrapped, Object.getPrototypeOf(callee))
+  Object.defineProperties(wrapped, Object.getOwnPropertyDescriptors(callee))
+
   function returnFunction (this:any, ...args: Parameters<F>) {
     return wrapped.apply(this, args)
   }
 
-  Object.setPrototypeOf(returnFunction, Object.getPrototypeOf(callee))
-  Object.defineProperties(returnFunction, Object.getOwnPropertyDescriptors(callee))
+  
 
   return returnFunction as F
 }
