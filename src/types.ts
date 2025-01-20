@@ -9,8 +9,8 @@ type Overload<F extends (...args: any) => any> = {
   ) => ReturnType<F>;
   
   type onResult<F extends (...args: any) => any> = (
-    params: { event: "onReturn", callee: F, args: Parameters<F>, result: ReturnType<F>, caught:unknown }) => {
-    result?: ReturnType<F>, caught?:unknown } | void
+    params: { event: "onReturn", callee: F, args: Parameters<F>, result: Awaited<ReturnType<F>>, caught:unknown }) => 
+    ReturnType<F> | Awaited<ReturnType<F>> | unknown | void
   
   type onCatch<F extends (...args: any) => any> = (
     params: { event: "onCatch", callee: F, args: Parameters<F>, caught: unknown }) => ReturnType<F> | unknown | void

@@ -30,7 +30,7 @@ const withExecution = <F extends (...args: any) => any>(
   
   onCatch && wrapped.catch((caught) => onCatch({ event: "onCatch", callee, args, caught }));
 
-  onResult && wrapped.then((result) => onResult({ event: "onReturn", callee, args, result, caught }));
+  onResult && wrapped.then((result) => onResult({ event: "onReturn", callee, args, result: result as Awaited<typeof result>, caught }));
 
   wrapped.then((r) => { result = r; return r; })
 

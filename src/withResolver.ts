@@ -24,7 +24,7 @@ function resolve(
       if (type === "finally") { handler.apply(context); continue }
       value = handler.apply(context, value);
       if (value instanceof Promise) {
-        return handlerChain.splice(index).reduce((acc, [t,h]) =>  (acc as any)[t](h.bind(context)), value);
+        return handlerChain.splice(index).reduce((acc, [t,h]) =>  (acc as any)[t](h.bind(context)), value );
       }
       value = [value];
       index++;
