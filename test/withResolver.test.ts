@@ -17,10 +17,10 @@ describe('withResolver', () => {
     expect(result).toBe(42);
   });
 
-  it('should call a then chain for an async function', () => {
+  it('should call a then chain for an sync function', () => {
     const callee = (v:number) => v;
     const then = vi.fn((r:number) => r);
-    const secondThen = vi.fn((r:number) => r * 2); 
+    const secondThen = vi.fn((r:number) => (r * 2).toString());  
     const result = withResolver(callee).then(then).then(secondThen)(10);
     expect(result).toBe(20);
     expect(then).toHaveBeenCalled();
@@ -38,7 +38,7 @@ describe('withResolver', () => {
   });
 
   it('should call catch handler', () => {
-    const callee = () => { throw new Error('error') };
+    const callee = () => { throw new Error('error') }
     const catchFn = vi.fn((error) => error);
     const wrapped = withResolver(callee).catch(catchFn);
     const result =  wrapped(42);

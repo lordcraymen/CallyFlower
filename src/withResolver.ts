@@ -8,8 +8,8 @@ type HandlerChain = Handler[];
 type ResolverType<F extends (...args: any) => any, R> = {
   (this: any, ...args: Parameters<F>): R;
   then<T>(handler: (result: R) => T): ResolverType<F, T>;
-  catch<T>(handler: (error: any) => T): ResolverType<F, T>;
-  finally(handler: () => void): void;
+  catch<T>(handler: (error: any) => T): ResolverType<F, F | T>;
+  finally(handler: () => void): ResolverType<F, R>;
 };
 
 function resolve(
