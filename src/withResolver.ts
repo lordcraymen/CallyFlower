@@ -68,4 +68,4 @@ function withResolver<F extends (...args: any) => any>(callee: F) {
   return Resolver;
 }
 
-export { withResolver };
+export { withResolver, type ResolverType };
