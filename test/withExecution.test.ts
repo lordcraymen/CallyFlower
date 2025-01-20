@@ -132,14 +132,14 @@ describe('withExecution', () => {
 
     it('should be possible to hook into an asynchronous function', async () => {
         const callee = vi.fn(async () => 41);
-        const wrapped = withExecution(callee, { onResult: ({ result }) => result.then(r => r + 1) });
+        const wrapped = withExecution(callee, { onResult: ({ result }) => result + 1 });
         const result = await wrapped();
         expect(result).toBe(42);
     });
 
     it('should return the original value if eventhandlers return void', () => {
         const callee = vi.fn(() => 42);
-        const wrapped = withExecution(callee, { onCall: console.log, onReturn: console.log });
+        const wrapped = withExecution(callee, { onCall: ({callee,args,event}) => (console.log(event,callee,args),callee(...args)) });
         const result = wrapped();
         expect(result).toBe(42);
     });
