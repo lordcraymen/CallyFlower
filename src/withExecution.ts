@@ -17,8 +17,8 @@ const withExecution = <F extends (...args: any) => any>(
 
   function wrapped(this:any,...args:Parameters<F>) {
     return ((context,args) => { 
-      let result; 
-      let params = onCall ? onCall({ args, callee }) : { callee, args };
+      let result;
+      let caught;
       result = withResolver(callee).then(r => (result = r,onResult ? onResult({callee, args}) : {} )).apply(context,args);
       return result; 
     })(this, args); 
