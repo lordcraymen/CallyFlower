@@ -14,36 +14,15 @@ const withExecution = <F extends (...args: any) => any>(
   { onCall, onResult, onCatch, onCleanup }: Hooks<F> = {}
 ) => {
   throwIfNotCallable(callee)
-  let caught: any
-  let args: any
-  let result: any
 
-  const getArgs = (...a:any) => {
-    args = a
-    return a;
+  function wrapped(this:any,...args:Parameters<F>) {
+    let result;
+    result = withResolver(callee).apply(this, args); 
+    return result;
   }
-
-  const wrapped = withResolver(getArgs)
-  
-  if(onCall) { wrapped.then(() => onCall({ event: "onCall", callee, args })) }
-  else { wrapped.then(callee) }
-  
-  onCatch && wrapped.catch((caught) => onCatch({ event: "onCatch", callee, args, caught }));
-
-  onResult && wrapped.then((result) => onResult({ event: "onReturn", callee, args, result: result as Awaited<typeof result>, caught }));
-
-  wrapped.then((r) => { result = r; return r; })
-
-  onCleanup && wrapped.finally(() =>  { onCleanup({ event: "onCleanup", callee, args, caught }) });
 
   Object.setPrototypeOf(wrapped, Object.getPrototypeOf(callee))
   Object.defineProperties(wrapped, Object.getOwnPropertyDescriptors(callee))
-
-  function returnFunction (this:any, ...args: Parameters<F>) {
-    return wrapped.apply(this, args)
-  }
-
-  
 
   return wrapped
 }
