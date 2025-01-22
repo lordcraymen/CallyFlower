@@ -20,9 +20,9 @@ const withExecution = <F extends (...args: any) => any>(
       let result : any;
       let caught : unknown;
 
-      const wrapped = withResolver(callee)
+      const wrapped = withResolver(callee).then(r => (result = r,r))
       onCatch && wrapped.catch((e:unknown) => (caught = e, onCatch({ event:"onCatch", callee, args, caught})))
-      onResult && wrapped.then(() => onResult({ event: "onResult", callee, args, result, caught }))
+      onResult && wrapped.then((r) => onResult({ event: "onResult", callee, args, result: r as any, caught }))
       onCleanup && wrapped.finally(() => onCleanup({ event:"onCleanup", callee, args, caught}))
 
       wrapped.apply(context,args);
