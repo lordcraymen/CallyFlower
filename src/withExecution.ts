@@ -16,9 +16,12 @@ const withExecution = <F extends (...args: any) => any>(
   throwIfNotCallable(callee)
 
   function wrapped(this:any,...args:Parameters<F>) {
-    let result;
-    result = withResolver(callee).apply(this, args); 
-    return result;
+    return ((context,args) => { 
+      let result; 
+      let params = onCall ? onCall({ args, callee }) : { callee, args };
+      result = withResolver(callee).then(r => (result = r,onResult ? onResult({callee, args}) : {} )).apply(context,args);
+      return result; 
+    })(this, args); 
   }
 
   Object.setPrototypeOf(wrapped, Object.getPrototypeOf(callee))
