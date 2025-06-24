@@ -4,6 +4,7 @@
   "description": "A collection of lightweight higher order functions to add customizable event handling to a function execution flow.",
   "main": "dist/callyflower.cjs.js",
   "module": "dist/callyflower.esm.js",
+  "type":"module",
   "browser": "dist/callyflower.min.js",
   "types": "dist/index.d.ts",
   "sideeffects": false,
