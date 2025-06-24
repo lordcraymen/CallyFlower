@@ -175,11 +175,10 @@ describe('withExecution', () => {
                 return this.value;
             }
         };
-        const onResult = vi.fn(({ result }) => result + 1);
+        const onResult = ({ result }) => result + 1;
         obj.getValue = withExecution(obj.getValue, { onResult });
         const result = obj.getValue();
         expect(result).toBe(43);
-        expect(onResult).toHaveBeenCalled();
     });
 
     it('should monkeypatch an async method that relies on the object context to return a different value', async () => {
