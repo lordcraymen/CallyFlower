@@ -109,7 +109,7 @@ describe('withExecution', () => {
         expect(onCatch).toHaveBeenCalled();
     });
 
-    it('should be possible to suprress an error in an async function', async () => {
+    it('should be possible to supress an error in an async function', async () => {
         const callee = vi.fn(async () => { throw new Error('error') });
         const onCatch = vi.fn(() => 43);
         const wrapped = withExecution(callee, { onCatch });
@@ -155,7 +155,10 @@ describe('withExecution', () => {
         function Child(age: Number) {
             this.age = age;
         }
-        const onCall = vi.fn((params) => params.callee(...params.args.map((a: number) => a * 2)));
+        const onCall = vi.fn(({ args, callee }) => {
+            return callee(args[0] * 2);
+        });
+        Child.prototype.getAge = function () {
         const ChildWithExecution = withExecution(Child, { onCall }) as typeof Child;
         const testChild = new (ChildWithExecution as any)(5);
         expect(testChild).toBeInstanceOf(Child);
@@ -166,7 +169,7 @@ describe('withExecution', () => {
             args: [5]
         });
         expect(testChild.age).toBe(5);
-    });
+    }});
 
     it('should monkeypatch a method that relies on the object context', () => {
         const obj = {
