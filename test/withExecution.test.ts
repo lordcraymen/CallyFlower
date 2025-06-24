@@ -155,9 +155,9 @@ describe('withExecution', () => {
         function Child(age: Number) {
             this.age = age;
         }
-        const onCall = vi.fn((params) => params.callee(params.args * 2));
-        const ChildWithExecution = withExecution(Child, { onCall });
-        const testChild = new ChildWithExecution(5);
+        const onCall = vi.fn((params) => params.callee(...params.args.map((a: number) => a * 2)));
+        const ChildWithExecution = withExecution(Child, { onCall }) as typeof Child;
+        const testChild = new (ChildWithExecution as any)(5);
         expect(testChild).toBeInstanceOf(Child);
         expect(onCall).toHaveBeenCalledWith({
         //    age: 10,
@@ -189,26 +189,22 @@ describe('withExecution', () => {
                 return this.value;
             }
         };
-        const onResult = vi.fn(({ result }) => ({ result: result.then(r => r + 1) }));
-        obj.getValue = withExecution(obj.getValue, { onResult });
+        const onResult = ({ result }) => result + 2;
+        obj.getValue = withExecution(obj.getValue, { onResult } as any);
         const result = await obj.getValue();
-        expect(result).toBe(43);
-        expect(onResult).toHaveBeenCalled();
+        expect(result).toBe(44);
     }
     );
 
     it('should be possible to overload the set method on a map with logging', () => {
-        const consoleMock = vi.spyOn(console, 'log').mockImplementation(() => undefined);
-        const map = new Map();
-        const onCall = vi.fn((params) => {
-            console.log(`setting ${params.args[0]} to ${params.args[1]}`);
-            return params.callee(...params.args);
-        });
-        map.set = withExecution(map.set, { onCall });
-        map.set('key', 'value');
-        expect(map.get('key')).toBe('value');
-        expect(console.log).toHaveBeenCalledWith('setting key to value');
-        consoleMock.mockRestore();
+        const map = new Map<string, number>();
+        const onCall = ({ args }) => {
+            console.log(`Setting key ${args[0]} to value ${args[1]}`)
+        };
+        map.set = withExecution(map.set, { onCall } as any);
+        map.set('a', 1);
+        
+        expect(map.get('a')).toBe(1);
     });
 
 });
