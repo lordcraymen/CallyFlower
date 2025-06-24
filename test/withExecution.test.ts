@@ -197,4 +197,16 @@ describe('withExecution', () => {
         expect(map.get('a')).toBe(1);
     });
 
+    it('should work on static methods of a class', () => {
+        class MyClass {
+            static myMethod() {
+                return 42;
+            }
+        }
+        const onCall = () => 44;
+        MyClass.myMethod = withExecution(MyClass.myMethod, { onCall } as any);
+        const result = MyClass.myMethod();
+        expect(result).toBe(44);
+    });
+
 });
