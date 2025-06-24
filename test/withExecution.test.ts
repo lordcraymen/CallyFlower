@@ -160,12 +160,12 @@ describe('withExecution', () => {
         const testChild = new (ChildWithExecution as any)(5);
         expect(testChild).toBeInstanceOf(Child);
         expect(onCall).toHaveBeenCalledWith({
-        //    age: 10,
+            age: 10,
             event: "onCall",
             callee: Child,
             args: [5]
         });
-        //expect(testChild.age).toBe(10);
+        expect(testChild.age).toBe(5);
     });
 
     it('should monkeypatch a method that relies on the object context', () => {
