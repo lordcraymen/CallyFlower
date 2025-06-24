@@ -15,7 +15,7 @@ type ResolverType<F extends (...args: any) => any, R> = {
 function resolve(
   value: Array<any>,
   handlerChain: HandlerChain = [],
-  context?: any
+  context: any
 ) {
   try {
    let index = 0;
