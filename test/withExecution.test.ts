@@ -152,24 +152,12 @@ describe('withExecution', () => {
     });
 
     it('should have the same prototype as the original function', () => {
-        function Child(age: Number) {
-            this.age = age;
-        }
-        const onCall = vi.fn(({ args, callee }) => {
-            return callee(args[0] * 2);
-        });
-        Child.prototype.getAge = function () {
-        const ChildWithExecution = withExecution(Child, { onCall }) as typeof Child;
-        const testChild = new (ChildWithExecution as any)(5);
-        expect(testChild).toBeInstanceOf(Child);
-        expect(onCall).toHaveBeenCalledWith({
-            age: 10,
-            event: "onCall",
-            callee: Child,
-            args: [5]
-        });
-        expect(testChild.age).toBe(5);
-    }});
+        function callee() { return 42; }
+        callee.prototype.method = function () { return 'method'; };
+        const wrapped = withExecution(callee);
+        expect(wrapped.prototype).toBe(callee.prototype);
+        expect(wrapped.prototype.method()).toBe('method');
+    });
 
     it('should monkeypatch a method that relies on the object context', () => {
         const obj = {
