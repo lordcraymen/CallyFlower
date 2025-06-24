@@ -15,7 +15,12 @@ const withExecution = <F extends (...args: any) => any>(
 ) => {
   throwIfNotCallable(callee)
 
+  if(!onCall && !onResult && !onCatch && !onCleanup) {
+      return callee;
+  }
+
   function wrapped(this:any,...args:Parameters<F>) {
+
     return ((context,args) => { 
       let caught : unknown;
 
