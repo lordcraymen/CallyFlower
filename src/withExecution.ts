@@ -2,6 +2,7 @@ import { throwIfNotCallable } from "./utils"
 import { withResolver } from "./withResolver"
 import { Hooks } from "./types"
 
+const EMPTY_HOOKS = Object.freeze({});
 
 /**
  * Wrap a function with execution hooks
@@ -11,15 +12,15 @@ import { Hooks } from "./types"
  */
 const withExecution = <F extends (...args: any) => any>(
   callee: F,
-  { onCall, onResult, onCatch, onCleanup }: Hooks<F> = {}
+  hooks: Hooks<F> = EMPTY_HOOKS
 ) => {
   throwIfNotCallable(callee)
 
-  if(!onCall && !onResult && !onCatch && !onCleanup) {
-      return callee;
-  }
+  if(hooks === EMPTY_HOOKS) return callee
 
   function wrapped(this:any,...args:Parameters<F>) {
+
+    const { onCall, onCatch, onResult, onCleanup } = hooks;
 
     return ((context,args) => { 
       let caught : unknown;
