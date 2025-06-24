@@ -114,16 +114,31 @@ describe('withResolver', () => {
   });
 
   it('should call all handlers in the correct order for an async function with an error', async () => {
-    const callee = async (_n:number) => { throw new Error('error') };
+    const callee = async (_n: number) => { throw new Error('error') };
     const then = vi.fn((r: number) => r);
     const catchFn = vi.fn((error) => error);
-    const finallyFn = vi.fn(() => {});
+    const finallyFn = vi.fn(() => { });
     const wrapped = withResolver(callee).then(then as any).catch(catchFn).finally(finallyFn);
     const result = await wrapped(42);
     expect(result).toBeInstanceOf(Error);
     expect(then).not.toHaveBeenCalled();
     expect(catchFn).toHaveBeenCalled();
     expect(finallyFn).toHaveBeenCalled();
+  });
+
+  it('should handle sync function with handler that returns promise mid-chain', async () => {
+    const callee = (v: number) => v;  // SYNC callee
+    const syncHandler = (r: number) => r * 2;  // SYNC handler  
+    const asyncHandler = (r: number) => Promise.resolve(r + 10); // ASYNC handler
+    const secondSyncHandler = (r => r * 3); // Another SYNC handler
+
+    const wrapped = withResolver(callee)
+      .then(syncHandler)
+      .then(asyncHandler)    // <- Transition point!
+      .then(secondSyncHandler);
+
+    const result = await wrapped(5);
+    expect(result).toBe(90); // ((5 * 2) + 10) * 3 = 60
   });
 
   it('should apply all handlers if at somepoint in the callchain a promise is returned', async () => {
