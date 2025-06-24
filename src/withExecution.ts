@@ -17,16 +17,15 @@ const withExecution = <F extends (...args: any) => any>(
 
   function wrapped(this:any,...args:Parameters<F>) {
     return ((context,args) => { 
-      let result : any;
       let caught : unknown;
 
-      const wrapped = withResolver(callee).then(r => (result = r,r))
+      const wrapped = withResolver(callee)
+      onCall && wrapped.then(() => onCall({ event: "onCall", callee, args }))
       onCatch && wrapped.catch((e:unknown) => (caught = e, onCatch({ event:"onCatch", callee, args, caught})))
       onResult && wrapped.then((r) => onResult({ event: "onResult", callee, args, result: r as any, caught }))
       onCleanup && wrapped.finally(() => onCleanup({ event:"onCleanup", callee, args, caught}))
 
-      wrapped.apply(context,args);
-      return result;
+      return wrapped.apply(context,args);
 
     })(this, args); 
   }
