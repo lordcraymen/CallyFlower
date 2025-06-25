@@ -3,16 +3,16 @@ import { vi } from 'vitest';
 describe('withExecution', () => {
 
     it('should run normally if no handler is provided', () => {
-        const callee = () => 42;
+        const callee = (p) => p;
         const wrapped = withExecution(callee);
-        const result = wrapped();
+        const result = wrapped(42);
         expect(result).toBe(42);
     });
 
     it('should run normally for an async function if no handler is provided', async () => {
-        const callee = async () => 42;
+        const callee = async (p) => p;
         const wrapped = withExecution(callee);
-        const result = await wrapped();
+        const result = await wrapped(42);
         expect(result).toBe(42);
     });
 
@@ -22,6 +22,16 @@ describe('withExecution', () => {
         const wrapped = withExecution(callee, { onCall });
         const result = wrapped();
         expect(result).toBe(43);
+        expect(onCall).toHaveBeenCalled();
+    });
+
+    it('should not call the callee when overriden by an onCall handler', () => {
+        const callee = vi.fn(() => 42);
+        const onCall = vi.fn(({args}) => 42);
+        const wrapped = withExecution(callee, { onCall });
+        const result = wrapped(42);
+        expect(result).toBe(42);
+        expect(callee).not.toHaveBeenCalled();
         expect(onCall).toHaveBeenCalled();
     });
 
@@ -134,13 +144,6 @@ describe('withExecution', () => {
         const callee = vi.fn(async () => 41);
         const wrapped = withExecution(callee, { onResult: ({ result }) => result + 1 });
         const result = await wrapped();
-        expect(result).toBe(42);
-    });
-
-    it('should return the original value if eventhandlers return void', () => {
-        const callee = vi.fn(() => 42);
-        const wrapped = withExecution(callee, { onCall: ({ callee, args, event }) => (console.log(event, callee, args), callee(...args)) });
-        const result = wrapped();
         expect(result).toBe(42);
     });
 

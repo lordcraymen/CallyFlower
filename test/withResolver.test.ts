@@ -11,9 +11,9 @@ describe('withResolver', () => {
   });
 
   it('should run normally for an async function if no handler is provided', async () => {
-    const callee = async () => 42;
+    const callee = async (p) => p;
     const wrapped = withResolver(callee);
-    const result = await wrapped();
+    const result = await wrapped(42);
     expect(result).toBe(42);
   });
 
