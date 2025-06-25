@@ -24,7 +24,7 @@ const withExecution = <F extends (...args: any) => any>(
 
     return ((context,args) => { 
       let caught : unknown;
-      const callee = (...args:Parameters<F>) => originalCallee.apply(context,args) as ReturnType<F>;
+      const callee = ((...args:Parameters<F>) => originalCallee.apply(context,args) ) as F;
 
       const wrapped = withResolver(onCall ? () => onCall({ event: "onCall", callee , args, }) : callee as typeof callee)
       //onCall && wrapped.then(() => onCall({ event: "onCall", callee, args }))
