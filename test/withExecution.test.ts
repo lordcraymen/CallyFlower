@@ -191,13 +191,15 @@ describe('withExecution', () => {
 
     it('should be possible to overload the set method on a map with logging', () => {
         const map = new Map<string, number>();
-        const onCall = ({ args }) => {
-            console.log(`Setting key ${args[0]} to value ${args[1]}`)
+        const onCall = ({ args, callee, context }) => {
+            console.log(`Setting key ${args[0]} to value ${args[1]+1}`)
+            console.log(`Context:`, context);
+            return callee.call(context, args[0], args[1] +1); // Return the value to be set
         };
         map.set = withExecution(map.set, { onCall } as any);
         map.set('a', 1);
         
-        expect(map.get('a')).toBe(1);
+        expect(map.get('a')).toBe(2);
     });
 
     it('should work on static methods of a class', () => {
