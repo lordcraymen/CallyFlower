@@ -11,12 +11,12 @@ const EMPTY_HOOKS = Object.freeze({});
  * @returns The wrapped function
  */
 const withExecution = <F extends (...args: any) => any>(
-  callee: F,
+  originalCallee: F,
   hooks: Hooks<F> = EMPTY_HOOKS
 ) => {
-  throwIfNotCallable(callee)
+  throwIfNotCallable(originalCallee)
 
-  if(hooks === EMPTY_HOOKS) return callee
+  if(hooks === EMPTY_HOOKS) return originalCallee
 
   function wrapped(this:any,...args:Parameters<F>) {
 
@@ -24,8 +24,9 @@ const withExecution = <F extends (...args: any) => any>(
 
     return ((context,args) => { 
       let caught : unknown;
+      const callee = (...args:any[]) => originalCallee.apply(context,args) as ReturnType<F>;
 
-      const wrapped = withResolver(onCall ? () => onCall({ event: "onCall", callee: (...args) => callee.call(context,...args) , args, }) : callee as typeof callee)
+      const wrapped = withResolver(onCall ? () => onCall({ event: "onCall", callee , args, }) : callee as typeof callee)
       //onCall && wrapped.then(() => onCall({ event: "onCall", callee, args }))
       onCatch && wrapped.catch((e:unknown) => (caught = e, onCatch({ event:"onCatch", callee, args, caught})))
       onResult && wrapped.then((r) => onResult({ event: "onResult", callee, args, result: r as any, caught }))
@@ -36,8 +37,8 @@ const withExecution = <F extends (...args: any) => any>(
     })(this, args); 
   }
 
-  Object.setPrototypeOf(wrapped, Object.getPrototypeOf(callee))
-  Object.defineProperties(wrapped, Object.getOwnPropertyDescriptors(callee))
+  Object.setPrototypeOf(wrapped, Object.getPrototypeOf(originalCallee))
+  Object.defineProperties(wrapped, Object.getOwnPropertyDescriptors(originalCallee))
 
   return wrapped
 }

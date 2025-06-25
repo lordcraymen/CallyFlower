@@ -27,9 +27,9 @@ describe('withExecution', () => {
 
     it('should not call the callee when overriden by an onCall handler', () => {
         const callee = vi.fn(() => 42);
-        const onCall = vi.fn(({args}) => 42);
+        const onCall = vi.fn(() => 42);
         const wrapped = withExecution(callee, { onCall });
-        const result = wrapped(42);
+        const result = wrapped();
         expect(result).toBe(42);
         expect(callee).not.toHaveBeenCalled();
         expect(onCall).toHaveBeenCalled();
