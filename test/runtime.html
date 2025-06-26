@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Runtime</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        p {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+    </style>
+    <script src="/dist/callyflower.min.js"></script>
+    <script>
+        // This script is used to test the runtime of various functionalities
+        function testRuntime() {
+            const withExecution = CallyFlower.withExecution;
+            console.log = withExecution(console.log, {onCall: ({callee, args}) => {
+                callee("overloaded withExecution test", args[0]);
+            }});
+            console.log("Testing runtime...");
+        }
+        window.onload = testRuntime;
+    </script>
+</head> 
+<body>
+    <h1>Test Runtime</h1>
+    <p>This page is used to test the runtime of various scripts and functionalities.</p>
+    <p>Recent changes have been made to the input handling in the SCM system.</p>
+    <p>Ensure that the input value is returned correctly in the withExecution test.</p>
+    <p>For more information, refer to the SCM documentation.</p>
+</body>
+</html>
