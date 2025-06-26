@@ -22,27 +22,28 @@ describe('withExecution', () => {
     });
 
     it('should call the eventhandlers in the correct order', () => {
-        const callee = (p: number) => p;
-        const onCall = vi.fn((params) => {
-            expect(params.args[0]).toBe(42);
-            throw new Error('42');
-        });
-        const onCatch = vi.fn(({caught}) => {
-            expect(caught.message).toBe('42');
-            return Number(caught.message) + 1;
-        });
-        const onResult = vi.fn(({result}) => {
-            expect(result).toBe(43);
+        const order: string[] = [];
+        const callee = (p:number) => 1;
+        const onCall = ({args}) => {
+            order.push('onCall');
+            throw(args[0]);
+        };
+        const onCatch = ({caught}) => {
+            order.push('onCatch');
+            return caught + 1;
+        };
+
+        const onResult = ({result}) => {
+            order.push('onResult');
             return result + 1;
-        });
-        const onCleanup = vi.fn(() => {});
+        };
+        const onCleanup = () => {
+            order.push('onCleanup');
+        };
         const wrapped = withExecution(callee, { onCall, onCatch, onResult, onCleanup });
-        wrapped(42);
-        expect(onCall).toHaveBeenCalled();
-        expect(onCatch).toHaveBeenCalled();
-        expect(onResult).toHaveBeenCalled();
-        expect(onCleanup).toHaveBeenCalled();
-        expect(onResult.mock.calls[0][0].result).toBe(43);
+        const result = wrapped(42);
+        expect(result).toBe(44);
+        expect(order).toEqual(['onCall', 'onCatch', 'onResult', 'onCleanup']);
     });
 
 
