@@ -32,7 +32,6 @@ describe('withExecution', () => {
             order.push('onCatch');
             return caught + 1;
         };
-
         const onResult = ({result}) => {
             order.push('onResult');
             return result + 1;
