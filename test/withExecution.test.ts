@@ -23,7 +23,7 @@ describe('withExecution', () => {
 
     it('should call the eventhandlers in the correct order', () => {
         const order: string[] = [];
-        const callee = (p:number) => 1;
+        const callee = (p:number) => p;
         const onCall = ({args}) => {
             order.push('onCall');
             throw(args[0]);
