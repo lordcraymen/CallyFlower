@@ -21,11 +21,36 @@
     <script>
         // This script is used to test the runtime of various functionalities
         function testRuntime() {
+            const test = (iterations) => {
+                for (let i = 0; i < iterations; i++) {
+                }
+            };
             const withExecution = CallyFlower.withExecution;
-            console.log = withExecution(console.log, { onCall: ({callee, args}) => {
-                callee("overloaded withExecution test", args[0]);
+            const testWithExecution = withExecution(test, { onCall: ({callee}) => {
+                callee(1000000);
             }});
-            console.log("Testing runtime...");
+
+            // Measure the time taken to execute the test function without execution
+            const startWithoutExecution = performance.now();
+            test(1000000);
+            const endWithoutExecution = performance.now();
+            const durationWithoutExecution = endWithoutExecution - startWithoutExecution;
+            console.log(`Test without execution completed in ${durationWithoutExecution} milliseconds`);
+
+            // Measure the time taken to execute the test function
+            const startWithExecution = performance.now();
+            testWithExecution();
+            const endWithExecution = performance.now();
+            const durationWithExecution = endWithExecution - startWithExecution;
+
+            console.log(`Test completed in ${durationWithExecution} milliseconds`);
+
+            console.log(`Execution time with CallyFlower: ${durationWithExecution} milliseconds`);
+            console.log(`Execution time without CallyFlower: ${durationWithoutExecution} milliseconds`);
+            console.log(`Execution time difference: ${durationWithExecution - durationWithoutExecution} milliseconds`);
+            //percentage difference
+            const percentageDifference = (durationWithExecution / durationWithoutExecution) * 100;
+            console.log(`Percentage difference: ${percentageDifference.toFixed(2)}%`);
         }
         window.onload = testRuntime;
     </script>
