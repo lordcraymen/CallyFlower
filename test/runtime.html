@@ -22,7 +22,7 @@
         // This script is used to test the runtime of various functionalities
         function testRuntime() {
             const withExecution = CallyFlower.withExecution;
-            console.log = withExecution(console.log, {onCall: ({callee, args}) => {
+            console.log = withExecution(console.log, { onCall: ({callee, args}) => {
                 callee("overloaded withExecution test", args[0]);
             }});
             console.log("Testing runtime...");
