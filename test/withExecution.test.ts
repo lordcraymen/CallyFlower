@@ -2,6 +2,11 @@ import { withExecution } from '../src/withExecution';
 import { vi } from 'vitest';
 describe('withExecution', () => {
 
+    it('should throw if the callee is not callable', () => {
+        const callee = 42 as any;
+        expect(() => withExecution(callee)).toThrow('Expected a function, but got 42');
+    });
+
     it('should run normally if no handler is provided', () => {
         const callee = (p) => p;
         const wrapped = withExecution(callee);
@@ -15,6 +20,32 @@ describe('withExecution', () => {
         const result = await wrapped(42);
         expect(result).toBe(42);
     });
+
+    it('should call the eventhandlers in the correct order', () => {
+        const callee = (p: number) => p;
+        const onCall = vi.fn((params) => {
+            expect(params.args[0]).toBe(42);
+            throw new Error('42');
+        });
+        const onCatch = vi.fn(({caught}) => {
+            expect(caught.message).toBe('42');
+            return Number(caught.message) + 1;
+        });
+        const onResult = vi.fn(({result}) => {
+            expect(result).toBe(43);
+            return result + 1;
+        });
+        const onCleanup = vi.fn(() => {});
+        const wrapped = withExecution(callee, { onCall, onCatch, onResult, onCleanup });
+        wrapped(42);
+        expect(onCall).toHaveBeenCalled();
+        expect(onCatch).toHaveBeenCalled();
+        expect(onResult).toHaveBeenCalled();
+        expect(onCleanup).toHaveBeenCalled();
+        expect(onResult.mock.calls[0][0].result).toBe(43);
+    });
+
+
 
     it('should call onCall handler', () => {
         const callee = () => 42;

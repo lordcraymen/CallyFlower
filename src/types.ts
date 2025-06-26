@@ -5,8 +5,7 @@ type Overload<F extends (...args: any) => any> = {
     caught?: any
   }
   
-  type onCall<F extends (...args: any) => any> = (params: { event: "onCall", callee: F, args: Parameters<F> }
-  ) => ReturnType<F>;
+  type onCall<F extends (...args: any) => any> = (params: { event: "onCall", callee: F, args: Parameters<F> }) => ReturnType<F> | Awaited<ReturnType<F>> | unknown | void;
   
   type onResult<F extends (...args: any) => any> = (
     params: { event: "onResult", callee: F, args: Parameters<F>, result: Awaited<ReturnType<F>>, caught:unknown }) => 
