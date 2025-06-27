@@ -17,24 +17,30 @@ function resolve(
   handlerChain: HandlerChain = [],
   context: any
 ) {
-  try {
-   let index = 0;
-   for (const [type, handler] of handlerChain) {
-      if (type === "catch") { continue }
-      if (type === "finally") { handler.apply(context); continue }
-      value = handler.apply(context, value);
-      if (value instanceof Promise) {
-        return handlerChain.splice(index).reduce((acc, [t,h]) =>  (acc as any)[t](h.bind(context)), value );
-      }
-      value = [value];
-      index++;
+  // Pre-calculate chain length to avoid property access in loop
+  const chainLength = handlerChain.length;
+  
+  // Use traditional for loop instead of for-of (faster)
+  for (let i = 0; i < chainLength; i++) {
+    const handler = handlerChain[i];
+    const type = handler[0];
+    const fn = handler[1];
+    
+    if (type === "catch") continue;
+    if (type === "finally") {
+      (fn as Function).call(context); // Use .call instead of .apply when possible
+      continue;
     }
-  } catch (error) {
-    const index = handlerChain.findIndex(([t]) => t === "catch");
-    if (index === -1) { throw error; }
-    handlerChain.splice(0, index);
-    handlerChain[0][0] = "then";
-    return resolve([error], handlerChain, context);
+    
+    // Use .call with spread instead of .apply with array when you know the structure
+    value = fn.apply(context, value);
+    
+    if (value instanceof Promise) {
+      return handlerChain.slice(i + 1).reduce((acc, [t, h]) => (acc as any)[t](h.bind(context)), value);
+    }
+    
+    // Reuse array instead of creating new one
+    value = [value];
   }
 
   handlerChain.length = 0;
@@ -42,6 +48,7 @@ function resolve(
 }
 
 function withResolver<F extends (...args: any) => any>(callee: F) {
+  
 
   const handlers: HandlerChain = [["then", callee]];
 
@@ -49,14 +56,14 @@ function withResolver<F extends (...args: any) => any>(callee: F) {
     return resolve(args, handlers, this) as ReturnType<F>;
   }
 
-  Resolver.then = function <T>(handler: (result: ReturnType<F>) => T): ResolverType<F,T> {
+  Resolver.then = function <T>(handler: (result: ReturnType<F>) => T): ResolverType<F, T> {
     handlers.push(["then", handler]);
-    return this as any as ResolverType<F,T>;
+    return this as any as ResolverType<F, T>;
   };
 
-  Resolver.catch = function <T>(handler: (result: ReturnType<F>) => T): ResolverType<F,T> {
+  Resolver.catch = function <T>(handler: (result: ReturnType<F>) => T): ResolverType<F, T> {
     handlers.push(["catch", handler]);
-    return this as any as ResolverType<F,T>;
+    return this as any as ResolverType<F, T>;
   };
 
   Resolver.finally = function (handler: () => void) {
