@@ -1,24 +1,36 @@
-const simpleResolve = (args:Array<any>, typeChain:Array<string>, handlerChain:Array<Function>, context:any, hasCatch:boolean) => {
-  let value = undefined;
+const THEN = 0;
+const CATCH = 1;
+const FINALLY = 2;
+
+const simpleResolve = (args:Array<any>, typeChain:Array<number>, handlerChain:Array<Function>, context:any) => {
+  
+  if (typeChain.length == 1 && typeChain[0] === THEN) {
+    return handlerChain[0].apply(context, args);
+  }
+  
+  let value = args;
   let index = 0;
   try { 
     for (;index < handlerChain.length;index++) {
       const type = typeChain[index];
       const handler = handlerChain[index];
-      if (type === "catch") { continue } 
-      if (type === "finally") { handler.apply(context); continue }
-      value = handler.apply(context, value); /*?.*/
+      if (type === CATCH) { continue } 
+      if (type === FINALLY) { handler(); continue }
+      value = handler.apply(context, value);
       if (value instanceof Promise) {
-        const remainingTypes = typeChain.splice(index);
-        const remainingHandlers = handlerChain.splice(index);
-        return remainingTypes.reduce((acc, t, idx) => (acc as any)[t](remainingHandlers[idx].bind(context)), value);
+        const remainingTypes = typeChain.slice(index + 1);
+        const remainingHandlers = handlerChain.slice(index + 1);
+        return remainingTypes.reduce((acc, t, idx) => {
+          const methodName = t === THEN ? "then" : t === CATCH ? "catch" : "finally";
+          return (acc as any)[methodName](remainingHandlers[idx].bind(context));
+        }, value);
       }
-      //value = [value];
+      value = [value];
     }
   } catch (error) {
-    const catchIndex = typeChain.indexOf("catch", index);
+    const catchIndex = typeChain.indexOf(CATCH, index);
     if (catchIndex > 0) {
-      return simpleResolve([error], typeChain.slice(catchIndex), handlerChain.slice(catchIndex), context, true);
+      return simpleResolve([error], typeChain.slice(catchIndex), handlerChain.slice(catchIndex), context);
     }
     throw error;
   }
@@ -27,24 +39,22 @@ const simpleResolve = (args:Array<any>, typeChain:Array<string>, handlerChain:Ar
 }
 
 const withSimpleResolver = (callee: Function): Function => { 
-  const types: Array<string> = ["then"];
+  const types: Array<number> = [THEN];
   const handlers: Array<Function> = [callee];
-  let hasCatch = false;
-  const Resolver = (...args:any[]) => simpleResolve(args, types, handlers, this, hasCatch);
+  const Resolver = (...args:any[]) => simpleResolve(args, types, handlers, this);
 
   Resolver.then = (handler: Function) => {
-    types.push("then");
+    types.push(THEN);
     handlers.push(handler);
     return Resolver;
   };
   Resolver.catch = (handler: Function) => {
-    types.push("catch");
+    types.push(CATCH);
     handlers.push(handler);
-    hasCatch = true;
     return Resolver;
   };
   Resolver.finally = (handler: Function) => {
-    types.push("finally");
+    types.push(FINALLY);
     handlers.push(handler);
     return Resolver;
   };

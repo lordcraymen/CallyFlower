@@ -17,19 +17,22 @@ function resolve(
   handlerChain: HandlerChain = [],
   context: any
 ) {
-  try { 
-   let index = 0;
-   //for (const [type, handler] of handlerChain) { 
-    while (index < handlerChain.length) {
-      const [type, handler] = handlerChain[index]; /*?.*/
-      if (type === "catch") { continue } 
-      if (type === "finally") { handler.apply(context); continue }
-      value = handler.apply(context, value); /*?.*/
+  try {
+    let index = 0;
+    for (; index < handlerChain.length; index++) {
+      const [type, handler] = handlerChain[index];
+      if (type === "catch") {
+        continue;
+      }
+      if (type === "finally") {
+        handler.apply(context);
+        continue;
+      }
+      value = handler.apply(context, value);
       if (value instanceof Promise) {
         return handlerChain.splice(index).reduce((acc, [t,h]) =>  (acc as any)[t](h.bind(context)), value );
       }
       value = [value];
-      index++;
     }
   } catch (error) {
     const index = handlerChain.findIndex(([t]) => t === "catch");
