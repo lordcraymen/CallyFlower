@@ -138,7 +138,7 @@ describe('withResolver', () => {
       .then(secondSyncHandler);
 
     const result = await wrapped(5);
-    expect(result).toBe(90); // ((5 * 2) + 10) * 3 = 60
+    expect(result).toBe(60); // ((5 * 2) + 10) * 3 = 60
   });
 
   it('should apply all handlers if at somepoint in the callchain a promise is returned', async () => {

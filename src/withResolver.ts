@@ -1,16 +1,10 @@
-
 const THEN = 0;
 const CATCH = 1;
 const FINALLY = 2;
 
 const TYPEMAP: Array<string> = ["then", "catch", "finally"];
 
-type Handler =
-  | ["then", (...args: any) => any]
-  | ["catch", (error: any) => any]
-  | ["finally", () => void];
-
-type HandlerChain = Handler[];
+type HandlerChain = Array<(...args: any) => any>; // Simplified to just functions
 
 type ResolverType<F extends (...args: any) => any, R> = {
   (this: any, ...args: Parameters<F>): R;
@@ -21,65 +15,72 @@ type ResolverType<F extends (...args: any) => any, R> = {
 
 function resolve(
   value: Array<any>,
-  typeChain: Array<0|1|2>,
+  typeChain: Array<0 | 1 | 2>,
   handlerChain: HandlerChain = [],
   context: any
 ) {
   try {
     let index = 0;
     for (; index < handlerChain.length; index++) {
-      const [_, handler] = handlerChain[index];
-      const [type] = handlerChain[index];
-      const numtype = TYPEMAP[typeChain[index]];
-      if (type === "catch") {
+      const handler = handlerChain[index];
+      const type = typeChain[index];
+
+      if (type === CATCH) {
         continue;
       }
-      if (type === "finally") {
-        (handler as ()=>void)();
+      if (type === FINALLY) {
+        (handler as () => void)();
         continue;
       }
       value = handler.apply(context, value);
       if (value instanceof Promise) {
-        return handlerChain.splice(index).reduce((acc, [t,h]) =>  (acc as any)[t](h.bind(context)), value );
+        const remainingHandlers = handlerChain.splice(index + 1);
+        const remainingTypes = typeChain.splice(index + 1);
+
+        return remainingHandlers.reduce((acc, h, i) => {
+          const typeString = TYPEMAP[remainingTypes[i]];
+          return (acc as any)[typeString](h.bind(context));
+        }, value);
       }
       value = [value];
     }
   } catch (error) {
-    const index = handlerChain.findIndex(([t]) => t === "catch");
-    if (index === -1) { throw error; }
-    handlerChain.splice(0, index);
-    handlerChain[0][0] = "then";
-    return resolve([error], typeChain, handlerChain, context); 
+    const catchIndex = typeChain.findIndex(t => t === CATCH);
+    if (catchIndex === -1) { throw error; }
+    handlerChain.splice(0, catchIndex);
+    typeChain.splice(0, catchIndex);
+    typeChain[0] = THEN;
+    return resolve([error], typeChain, handlerChain, context);
   }
 
   handlerChain.length = 0;
-  return value[0]; /*?.*/
+  typeChain.length = 0;
+  return value[0];
 }
 
 function withResolver<F extends (...args: any) => any>(callee: F) {
-
-  const handlerChain: HandlerChain = [["then", callee]];
-  const typeChain: Array<0|1|2> = [THEN];
+  const typeChain: Array<0 | 1 | 2> = [THEN];
+  const handlerChain: HandlerChain = [callee];
 
   function Resolver(this: any, ...args: Parameters<F>) {
-    return resolve(args, typeChain, handlerChain, this) as ReturnType<F>; /*?.*/
+    return handlerChain.length === 1 ? callee.apply(this, args) : resolve(args, typeChain, handlerChain, this) as ReturnType<F>;
   }
 
-  Resolver.then = function <T>(handler: (result: ReturnType<F>) => T): ResolverType<F,T> {
-    handlerChain.push(["then", handler]);
+  Resolver.then = function <T>(handler: (result: ReturnType<F>) => T): ResolverType<F, T> {
     typeChain.push(THEN);
-    return this as any as ResolverType<F,T>;
+    handlerChain.push(handler);
+    return this as any as ResolverType<F, T>;
   };
 
-  Resolver.catch = function <T>(handler: (result: ReturnType<F>) => T): ResolverType<F,T> {
-    handlerChain.push(["catch", handler]);
+  Resolver.catch = function <T>(handler: (result: ReturnType<F>) => T): ResolverType<F, T> {
     typeChain.push(CATCH);
-    return this as any as ResolverType<F,T>;
+    handlerChain.push(handler);
+    return this as any as ResolverType<F, T>;
   };
 
   Resolver.finally = function (handler: () => void) {
-    handlerChain.push(["finally", handler]);
     typeChain.push(FINALLY);
+    handlerChain.push(handler);
     return this;
   };
 
