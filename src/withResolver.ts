@@ -14,7 +14,7 @@ type ResolverType<F extends (...args: any) => any, R> = {
 };
 
 function resolve(
-  value: Array<any>,
+  value: any,
   typeChain: Array<0 | 1 | 2>,
   handlerChain: HandlerChain = [],
   context: any
@@ -22,6 +22,16 @@ function resolve(
   try {
     let index = 0;
     for (; index < handlerChain.length; index++) {
+      if (value instanceof Promise) {
+        const remainingHandlers = handlerChain.splice(index);
+        const remainingTypes = typeChain.splice(index);
+
+        return remainingHandlers.reduce((acc, h, i) => {
+          const typeString = TYPEMAP[remainingTypes[i]];
+          return (acc as any)[typeString](h.bind(context));
+        }, value);
+      }
+
       const handler = handlerChain[index];
       const type = typeChain[index];
 
@@ -32,17 +42,8 @@ function resolve(
         (handler as () => void)();
         continue;
       }
-      value = handler.apply(context, value);
-      if (value instanceof Promise) {
-        const remainingHandlers = handlerChain.splice(index + 1);
-        const remainingTypes = typeChain.splice(index + 1);
 
-        return remainingHandlers.reduce((acc, h, i) => {
-          const typeString = TYPEMAP[remainingTypes[i]];
-          return (acc as any)[typeString](h.bind(context));
-        }, value);
-      }
-      value = [value];
+      value = handler.call(context, value);
     }
   } catch (error) {
     const catchIndex = typeChain.findIndex(t => t === CATCH);
@@ -50,20 +51,18 @@ function resolve(
     handlerChain.splice(0, catchIndex);
     typeChain.splice(0, catchIndex);
     typeChain[0] = THEN;
-    return resolve([error], typeChain, handlerChain, context);
+    return resolve(error, typeChain, handlerChain, context);
   }
 
-  handlerChain.length = 0;
-  typeChain.length = 0;
-  return value[0];
+  return value;
 }
 
 function withResolver<F extends (...args: any) => any>(callee: F) {
-  const typeChain: Array<0 | 1 | 2> = [THEN];
-  const handlerChain: HandlerChain = [callee];
+  const typeChain: Array<0 | 1 | 2> = [];
+  const handlerChain: HandlerChain = [];
 
   function Resolver(this: any, ...args: Parameters<F>) {
-    return handlerChain.length === 1 ? callee.apply(this, args) : resolve(args, typeChain, handlerChain, this) as ReturnType<F>;
+    return handlerChain.length === 0 ? callee.apply(this, args) : resolve(callee.apply(this, args), typeChain, handlerChain, this) as ReturnType<F>;
   }
 
   Resolver.then = function <T>(handler: (result: ReturnType<F>) => T): ResolverType<F, T> {
