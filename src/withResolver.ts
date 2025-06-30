@@ -1,3 +1,5 @@
+
+
 type Handler =
   | ["then", (...args: any) => any]
   | ["catch", (error: any) => any]
@@ -51,7 +53,7 @@ function withResolver<F extends (...args: any) => any>(callee: F) {
   const handlers: HandlerChain = [["then", callee]];
 
   function Resolver(this: any, ...args: Parameters<F>) {
-    return resolve(args, handlers, this) as ReturnType<F>; /*?.*/
+    return handlers.length === 1 ? callee.apply(this,args) : resolve(args, handlers, this) as ReturnType<F>; /*?.*/
   }
 
   Resolver.then = function <T>(handler: (result: ReturnType<F>) => T): ResolverType<F,T> {

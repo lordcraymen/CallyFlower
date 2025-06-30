@@ -95,7 +95,7 @@ const runComparisonTest = (iterations: number = 1000) => {
 };
 
 // Memory usage test
-const memoryTest = () => {
+const runMemoryTest = () => {
   console.log("=== Memory Test ===");
 
   const testMemory = (name: string, createFn: () => Function) => {
@@ -121,8 +121,4 @@ const memoryTest = () => {
   testMemory("withSimpleResolver", () => withSimpleResolver(testfunction));
 };
 
-runIsolatedTests();
-runComparisonTest(5000000);
-memoryTest();
-
-export { performanceTest, runIsolatedTests, runComparisonTest };
+export { performanceTest, runIsolatedTests, runComparisonTest, runMemoryTest };

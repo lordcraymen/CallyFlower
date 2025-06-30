@@ -10,6 +10,7 @@ const simpleResolve = (args:Array<any>, typeChain:Array<number>, handlerChain:Ar
   
   let value = args;
   let index = 0;
+  
   try { 
     for (;index < handlerChain.length;index++) {
       const type = typeChain[index];
@@ -39,9 +40,9 @@ const simpleResolve = (args:Array<any>, typeChain:Array<number>, handlerChain:Ar
 }
 
 const withSimpleResolver = (callee: Function): Function => { 
-  const types: Array<number> = [THEN];
-  const handlers: Array<Function> = [callee];
-  const Resolver = (...args:any[]) => simpleResolve(args, types, handlers, this);
+  const types: Array<number> = [];
+  const handlers: Array<Function> = [];
+  const Resolver = (...args:any[]) => types.length === 0 ? callee.apply(this,args) : simpleResolve(args, types, handlers, this);
 
   Resolver.then = (handler: Function) => {
     types.push(THEN);

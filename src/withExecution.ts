@@ -1,5 +1,6 @@
 import { throwIfNotCallable } from "./utils"
 import { withResolver } from "./withResolver"
+//import { withSimpleResolver as withResolver } from "./withSimpleresolver"
 import { Hooks } from "./types"
 
 const EMPTY_HOOKS = Object.freeze({});
