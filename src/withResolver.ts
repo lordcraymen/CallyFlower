@@ -3,7 +3,7 @@ const THEN = 0;
 const CATCH = 1;
 const FINALLY = 2;
 
-const handlertypeMap: Array<string> = ["then", "catch", "finally"];
+const TYPEMAP: Array<string> = ["then", "catch", "finally"];
 
 type Handler =
   | ["then", (...args: any) => any]
@@ -30,11 +30,12 @@ function resolve(
     for (; index < handlerChain.length; index++) {
       const [_, handler] = handlerChain[index];
       const [type] = handlerChain[index];
+      const numtype = TYPEMAP[typeChain[index]];
       if (type === "catch") {
         continue;
       }
       if (type === "finally") {
-        handler.apply(context);
+        (handler as ()=>void)();
         continue;
       }
       value = handler.apply(context, value);
@@ -61,7 +62,7 @@ function withResolver<F extends (...args: any) => any>(callee: F) {
   const typeChain: Array<0|1|2> = [THEN];
 
   function Resolver(this: any, ...args: Parameters<F>) {
-    return handlerChain.length === 1 ? callee.apply(this,args) : resolve(args, typeChain, handlerChain, this) as ReturnType<F>; /*?.*/
+    return resolve(args, typeChain, handlerChain, this) as ReturnType<F>; /*?.*/
   }
 
   Resolver.then = function <T>(handler: (result: ReturnType<F>) => T): ResolverType<F,T> {
