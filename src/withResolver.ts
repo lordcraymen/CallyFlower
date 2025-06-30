@@ -28,7 +28,8 @@ function resolve(
   try {
     let index = 0;
     for (; index < handlerChain.length; index++) {
-      const [type, handler] = handlerChain[index];
+      const [_, handler] = handlerChain[index];
+      const [type] = handlerChain[index];
       if (type === "catch") {
         continue;
       }
