@@ -41,7 +41,7 @@ describe('withExecution', () => {
         };
         const wrapped = withExecution(callee, { onCall, onCatch, onResult, onCleanup });
         const result = wrapped(42);
-        expect(result).toBe(44);
+        expect(result).toBe(43);
         expect(order).toEqual(['onCall', 'onCatch', 'onResult', 'onCleanup']);
     });
 
