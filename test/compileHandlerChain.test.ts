@@ -5,7 +5,14 @@ function extractFunctionBody(fn: Function): string {
     const fnString = fn.toString();
     const bodyStart = fnString.indexOf('{');
     const bodyEnd = fnString.lastIndexOf('}');
-    return fnString.slice(bodyStart + 1, bodyEnd).trim();
+    let body = fnString.slice(bodyStart + 1, bodyEnd).trim();
+    
+    // Normalize parameter names that might get mangled (handlerChain2 -> handlerChain)
+    body = body.replace(/handlerChain\d+/g, 'handlerChain');
+    body = body.replace(/args\d+/g, 'args');
+    body = body.replace(/context\d+/g, 'context');
+    
+    return body;
 }
 
 describe('compileHandlerChain', () => {
@@ -13,13 +20,9 @@ describe('compileHandlerChain', () => {
         const typechain:TypeChain = [];
         const handlerChain: Array<Function> = [];
 
-        const expected = function (handlerChain,args,context) {
-            return args;
-        }
-
-        const expectedBody = extractFunctionBody(expected).replace(/\s+/g, ' ').trim();
+        const expected = "{return args;}";
         const result = compileHandlerChain(typechain, handlerChain).replace(/\s+/g, ' ').trim();
-        expect(result).toBe(expectedBody);
+        expect(result).toBe(expected);
     });
     it('should compile a simple handler chain with then', () => {
         const typechain:TypeChain = [0];
@@ -34,6 +37,7 @@ describe('compileHandlerChain', () => {
 
         const expectedBody = extractFunctionBody(expected).replace(/\s+/g, ' ').trim();
         const result = compileHandlerChain(typechain, handlerChain).replace(/\s+/g, ' ').trim();
+
         expect(result).toBe(expectedBody);
     });
 

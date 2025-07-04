@@ -60,15 +60,15 @@ export function compileHandlerChain(typeChain: TypeChain, handlerChain: Array<Fu
     // Generate the then handler call
     if (i === 0) {
       // First handler gets the original args
-      code += `${inTryBlock ? '    ' : ''}v = handlerChain[${i}].apply(context, args);\n`;
+      code += `${inTryBlock ? '    ' : ''}v = handlerChain[${i}].apply(context, args);`;
     } else {
       // Subsequent handlers get the single value
-      code += `${inTryBlock ? '    ' : ''}v = handlerChain[${i}].call(context, v);\n`;
+      code += `${inTryBlock ? '    ' : ''}v = handlerChain[${i}].call(context, v);`;
     }
     
     // Check for Promise return
     if (needsTry) {
-      code += `${inTryBlock ? '    ' : ''}if (v instanceof Promise)  return v;\n`;
+      code += `${inTryBlock ? '    ' : ''}if (v instanceof Promise) return v;`;
     }
     
     i++;
@@ -78,33 +78,29 @@ export function compileHandlerChain(typeChain: TypeChain, handlerChain: Array<Fu
     const shouldCloseTry = inTryBlock && (nextThenIndex === -1 || findNextCatch(typeChain, i) !== nextCatchIndex);
     
     if (shouldCloseTry && inTryBlock) {
-      code += "} catch (e) {\n";
-      code += `    return handlerChain[${nextCatchIndex}].call(context, e);\n`;
-      code += "}";
+      code += "} catch (e) { return handlerChain[${nextCatchIndex}].call(context, e);}";
       
       // Add finally block if we have finally handlers
       if (finallyHandlers.length > 0) {
-        code += " finally {\n";
+        code += " finally {";
         for (const finallyIndex of finallyHandlers) {
-          code += `    handlerChain[${finallyIndex}]();\n`;
+          code += `handlerChain[${finallyIndex}]();\n`;
         }
         code += "}";
       }
-      
-      code += "\n";
       inTryBlock = false;
     }
   }
   
   // Handle case where we don't have try/catch but still need Promise check
   if (!hasCatch && typeChain.some(type => type === THEN)) {
-    code += "if (v instanceof Promise)  return v;\n";
+    code += "if (v instanceof Promise)  return v;";
   }
   
   // Add finally handlers if no try/catch block was used
   if (!hasCatch && finallyHandlers.length > 0) {
     for (const finallyIndex of finallyHandlers) {
-      code += `handlerChain[${finallyIndex}]();\n`;
+      code += `handlerChain[${finallyIndex}]();`;
     }
   }
   
