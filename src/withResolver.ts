@@ -52,7 +52,7 @@ function resolve(
     throw error;
   }
 
-  return value;
+  return value[0];
 }
 
 function withResolver<F extends (...args: any) => any>(callee: F) {
@@ -78,7 +78,7 @@ function withResolver<F extends (...args: any) => any>(callee: F) {
   Resolver.finally = function (handler: () => void) {
     typeChain.push(FINALLY);
     handlerChain.push(handler);
-    return this;
+    return (...args:Parameters<F>) => this.apply(this, args);
   };
 
   return Resolver;

@@ -105,7 +105,7 @@ describe('withResolver', () => {
     const then = vi.fn((r: number) => r);
     const catchFn = vi.fn((error) => error);
     const finallyFn = vi.fn(() => { });
-    const wrapped = withResolver(callee).then(then).catch(catchFn).finally(finallyFn);
+    const wrapped = withResolver(callee).then(then).catch(catchFn).finally(finallyFn).
     const result = wrapped(42);
     expect(result).toBeInstanceOf(Error);
     expect(then).not.toHaveBeenCalled();

@@ -1,44 +1,31 @@
 import { compileHandlerChain, TypeChain} from '../src/compileHandlerChain';
 
-// Helper function to extract function body
-function extractFunctionBody(fn: Function): string {
-    const fnString = fn.toString();
-    const bodyStart = fnString.indexOf('{');
-    const bodyEnd = fnString.lastIndexOf('}');
-    let body = fnString.slice(bodyStart + 1, bodyEnd).trim();
-    
-    // Normalize parameter names that might get mangled (handlerChain2 -> handlerChain)
-    body = body.replace(/handlerChain\d+/g, 'handlerChain');
-    body = body.replace(/args\d+/g, 'args');
-    body = body.replace(/context\d+/g, 'context');
-    
-    return body;
-}
-
 describe('compileHandlerChain', () => {
       it('should handle an empty handler chain', () => {
         const typechain:TypeChain = [];
         const handlerChain: Array<Function> = [];
 
-        const expected = "{return args;}";
-        const result = compileHandlerChain(typechain, handlerChain).replace(/\s+/g, ' ').trim();
+        const expected = 
+        `{
+            return args;
+        }`;
+        const result = compileHandlerChain(typechain, handlerChain);
         expect(result).toBe(expected);
     });
     it('should compile a simple handler chain with then', () => {
         const typechain:TypeChain = [0];
         const handlerChain = [() => 'result'];
 
-        const expected = function (handlerChain,args,context) {
-            let v; 
+        const expected = 
+        `{
+            let v;
             v = handlerChain[0].apply(context, args);
-            if (v instanceof Promise)  return v;
             return v;
-        }
+        }`;
 
-        const expectedBody = extractFunctionBody(expected).replace(/\s+/g, ' ').trim();
-        const result = compileHandlerChain(typechain, handlerChain).replace(/\s+/g, ' ').trim();
+        const result = compileHandlerChain(typechain, handlerChain);
 
-        expect(result).toBe(expectedBody);
+        expect(result).toBe(expected);
     });
 
     it('should compile a handler chain with then and catch', () => {
@@ -48,20 +35,18 @@ describe('compileHandlerChain', () => {
             (error) => `catch: ${error}`
         ];
 
-        const expected = function (handlerChain,args,context) {
+        const expected = 
+        `{
             let v; 
             try {
                 v = handlerChain[0].apply(context, args);
             } catch (e) {
                 return handlerChain[1].call(context, e);
             }
-            if (v instanceof Promise)  return v;
             return v;
-        }
-
-        const expectedBody = extractFunctionBody(expected).replace(/\s+/g, ' ').trim();
-        const result = compileHandlerChain(typechain, handlerChain).replace(/\s+/g, ' ').trim();
-        expect(result).toBe(expectedBody);
+        }`
+        const result = compileHandlerChain(typechain, handlerChain);
+        expect(result).toBe(expected);
     });
 
     it('should compile a handler chain with then, catch, and finally', () => {
@@ -72,7 +57,8 @@ describe('compileHandlerChain', () => {
             () => {console.log('finally')}
         ];
 
-        const expected = function (handlerChain,args,context) {
+        const expected = 
+        `{
             let v; 
             try {
                 v = handlerChain[0].apply(context, args);
@@ -83,7 +69,7 @@ describe('compileHandlerChain', () => {
                 handlerChain[2]();
             }
             return v;
-        }
+        }`;
 
         const expectedBody = extractFunctionBody(expected).replace(/\s+/g, ' ').trim();
         const result = compileHandlerChain(typechain, handlerChain).replace(/\s+/g, ' ').trim();

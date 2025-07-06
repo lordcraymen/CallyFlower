@@ -57,7 +57,6 @@ const withSimpleResolver = (callee: Function): Function => {
   Resolver.finally = (handler: Function) => {
     types.push(FINALLY);
     handlers.push(handler);
-    return Resolver;
   };
 
   return Resolver;
