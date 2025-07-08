@@ -36,11 +36,11 @@ function hasOnlyFinallyHandlers(typeChain: TypeChain): boolean {
 
 function generateOnlyFinallyChain(typeChain: TypeChain): string {
     // Generate: { hc[0](); hc[1](); ... return a; }
-    let code = '{\n';
+    let code = '{';
     for (let i = 0; i < typeChain.length; i++) {
-        code += `    hc[${i}]();\n`;
+        code += `hc[${i}]();`;
     }
-    code += '    return a;\n}';
+    code += 'return a;}';
     return code;
 }
 

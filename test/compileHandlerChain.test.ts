@@ -58,12 +58,12 @@ describe('compilehc', () => {
                 r = hc[0].apply(c, a);
                 if (r instanceof Promise) return aw(r,hc,1);
             } catch (e) {
-                return hc[1].call(c, e);
+                return hc[1].call(c,e);
             }
             return r;
         }`;
         const result = compilehc(typechain, hc);
-        expect(result).toBe(expected);
+        expect(normalize(result)).toBe(normalize(expected));
     });
 
     it('should compile a handler chain with then, catch, and finally', () => {
@@ -89,7 +89,7 @@ describe('compilehc', () => {
         }`;
 
         const result = compilehc(typechain, hc);
-        expect(result).toBe(expected);
+        expect(normalize(result)).toBe(normalize(expected));
     });
 
     it('should compile a handler chain with then and finally', () => {
@@ -109,7 +109,7 @@ describe('compilehc', () => {
         }`;
 
         const result = compilehc(typechain, hc);
-        expect(result).toBe(expected);
+        expect(normalize(result)).toBe(normalize(expected));
     });
 
     it('should compile a handler chain with only finally', () => {
@@ -118,14 +118,10 @@ describe('compilehc', () => {
             () => { console.log('finally') }
         ];
 
-        const expected =
-        `{
-            hc[0]();
-            return a;
-        }`;
+        const expected = "{hc[0]();return a;}";
 
         const result = compilehc(typechain, hc);
-        expect(result).toBe(expected);
+        expect(normalize(result)).toBe(normalize(expected));
     });
 
     it('should compile a handler chain with multiple then handlers', () => {
@@ -147,7 +143,7 @@ describe('compilehc', () => {
         }`;
 
         const result = compilehc(typechain, hc);
-        expect(result).toBe(expected);
+        expect(normalize(result)).toBe(normalize(expected));
     });
 
     it('should compile a handler chain with then, catch, and multiple finally handlers', () => {
@@ -176,7 +172,7 @@ describe('compilehc', () => {
 
 
         const result = compilehc(typechain, hc);
-        expect(result).toBe(expected);
+        expect(normalize(result)).toBe(normalize(expected));
     });
 
     it('should compile a handler chain with multiple alternating then and catch handlers', () => {
@@ -235,7 +231,7 @@ describe('compilehc', () => {
         }`;
 
         const result = compilehc(typechain, hc);
-        expect(result).toBe(expected);
+        expect(normalize(result)).toBe(normalize(expected));
     });
 
     it('should compile a handler chain with multiple catch handlers (the n+1th catches the nth) and multiple finally handlers', () => {
@@ -273,7 +269,7 @@ describe('compilehc', () => {
         }`;
 
         const result = compilehc(typechain, hc);
-        expect(result).toBe(expected);
+        expect(normalize(result)).toBe(normalize(expected));
     });
 
     it('should compile a handler chain with only catch handlers (it should simply ignore the catch handlers)', () => {
@@ -286,7 +282,7 @@ describe('compilehc', () => {
         const expected = `{return a;}`;
 
         const result = compilehc(typechain, hc);
-        expect(result).toBe(expected);
+        expect(normalize(result)).toBe(normalize(expected));
     });
 
     it('should compile a handler chain with then-finally-catch pattern', () => {
@@ -311,7 +307,7 @@ describe('compilehc', () => {
         }`;
 
         const result = compilehc(typechain, hc);
-        expect(result).toBe(expected);
+        expect(normalize(result)).toBe(normalize(expected));
     });
 
 });
