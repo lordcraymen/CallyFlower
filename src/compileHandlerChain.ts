@@ -46,7 +46,7 @@ function generateOnlyFinallyChain(typeChain: TypeChain): string {
 
 function generateComplexChain(typeChain: TypeChain): string {
     // Start with variable declaration
-    let code = '{\n    var r;\n';
+    let code = '{var r;';
     
     // Process handlers in groups (try blocks)
     const handlerGroups = groupHandlers(typeChain);
@@ -54,8 +54,8 @@ function generateComplexChain(typeChain: TypeChain): string {
     for (const group of handlerGroups) {
         code += generateHandlerGroup(group);
     }
-    
-    code += '    return r;\n}';
+
+    code += 'return r;}';
     return code;
 }
 
@@ -96,58 +96,67 @@ function groupHandlers(typeChain: TypeChain): HandlerGroup[] {
     return groups;
 }
 
+function generateThenHandler(index: number, isFirst: boolean, isLast: boolean, inTryBlock: boolean = true): string {
+    let code = '';
+    
+    if (isFirst) {
+        // Nur der allererste Handler in der gesamten Chain bekommt apply mit args
+        code += `r = hc[${index}].apply(c, a);`;
+    } else {
+        // Alle anderen THEN Handler bekommen call mit dem vorherigen Ergebnis
+        code += `r = hc[${index}].call(c, r);`;
+    }
+    
+    // Promise check nur hinzufügen wenn es NICHT der letzte Handler ist
+    if (!isLast) {
+        code += `if (r instanceof Promise) return aw(r,hc,${index + 1});`;
+    }
+
+    return code;
+}
+
 function generateHandlerGroup(group: HandlerGroup): string {
-    // Generate code for a group of handlers (try-catch-finally block)
     let code = '';
     
     const hasCatch = group.catch.length > 0;
     const hasFinally = group.finally.length > 0;
     
     if (hasCatch || hasFinally) {
-        code += '    try {\n';
+        code += 'try {';
         
         // Generate THEN handlers
-        for (const thenIndex of group.then) {
-            code += generateThenHandler(thenIndex, group.then[0] === thenIndex);
+        for (let i = 0; i < group.then.length; i++) {
+            const thenIndex = group.then[i];
+            const isFirst = thenIndex === 0;
+            const isLast = i === group.then.length - 1 && group.catch.length === 0; // Letzter wenn keine catch handler folgen
+            code += generateThenHandler(thenIndex, isFirst, isLast);
         }
         
-        code += '    }';
+        // Generate FINALLY handlers (falls welche im try block sind)
+        for (const finallyIndex of group.finally) {
+            code += `hc[${finallyIndex}]();`;
+        }
+        
+        code += '}';
         
         // Generate CATCH handlers (nested)
         if (hasCatch) {
             code += generateCatchBlock(group.catch);
         }
-        
-        // Generate FINALLY block
-        if (hasFinally) {
-            code += generateFinallyBlock(group.finally);
-        }
-        
-        code += '\n';
     } else {
         // No try-catch needed, just execute THEN handlers
-        for (const thenIndex of group.then) {
-            code += generateThenHandler(thenIndex, group.then[0] === thenIndex, false);
+        for (let i = 0; i < group.then.length; i++) {
+            const thenIndex = group.then[i];
+            const isFirst = thenIndex === 0;
+            const isLast = i === group.then.length - 1; // Definitiv der letzte ohne catch/finally
+            code += generateThenHandler(thenIndex, isFirst, isLast, false);
+        }
+        
+        // Execute FINALLY handlers
+        for (const finallyIndex of group.finally) {
+            code += `hc[${finallyIndex}]();`;
         }
     }
-    
-    return code;
-}
-
-function generateThenHandler(index: number, isFirst: boolean, inTryBlock: boolean = true): string {
-    // Generate: r = hc[index].apply/call(c, a/r);
-    // Add Promise check if needed
-    const indent = inTryBlock ? '        ' : '    ';
-    let code = '';
-    
-    if (isFirst) {
-        code += `${indent}r = hc[${index}].apply(c, a);\n`;
-    } else {
-        code += `${indent}r = hc[${index}].call(c, r);\n`;
-    }
-    
-    // Add Promise check (if not last handler)
-    code += `${indent}if (r instanceof Promise) return aw(r,hc,${index + 1});\n`;
     
     return code;
 }
@@ -158,25 +167,25 @@ function generateCatchBlock(catchIndices: number[]): string {
     
     for (let i = 0; i < catchIndices.length; i++) {
         const catchIndex = catchIndices[i];
-        const errorVar = i === 0 ? 'e' : `e${i + 1}`;
+        const errorVar = `e${i + 1}`;
         
-        code += ` catch (${errorVar}) {\n`;
+        code += `catch (${errorVar}) {`;
         
         if (i < catchIndices.length - 1) {
             // Not the last catch, wrap in try
-            code += `        try {\n`;
-            code += `            return hc[${catchIndex}].call(c, ${errorVar});\n`;
-            code += `        }`;
+            code += `try {`;
+            code += `return hc[${catchIndex}].call(c, ${errorVar});`;
+            code += `}`;
         } else {
             // Last catch, direct return
-            code += `        return hc[${catchIndex}].call(c, ${errorVar});\n`;
-            code += '    }';
+            code += `return hc[${catchIndex}].call(c, ${errorVar});`;
+            code += '}';
         }
     }
     
     // Close remaining catch blocks
     for (let i = 0; i < catchIndices.length - 1; i++) {
-        code += '\n    }';
+        code += '}';
     }
     
     return code;
@@ -184,13 +193,13 @@ function generateCatchBlock(catchIndices: number[]): string {
 
 function generateFinallyBlock(finallyIndices: number[]): string {
     // Generate: finally { hc[2](); hc[3](); }
-    let code = ' finally {\n';
+    let code = ' finally {';
     
     for (const finallyIndex of finallyIndices) {
-        code += `        hc[${finallyIndex}]();\n`;
+        code += `hc[${finallyIndex}]();`;
     }
-    
-    code += '    }';
+
+    code += '}';
     return code;
 }
 

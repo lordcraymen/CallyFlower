@@ -57,8 +57,8 @@ describe('compilehc', () => {
             try {
                 r = hc[0].apply(c, a);
                 if (r instanceof Promise) return aw(r,hc,1);
-            } catch (e) {
-                return hc[1].call(c,e);
+            } catch (e1) {
+                return hc[1].call(c,e1);
             }
             return r;
         }`;
@@ -80,8 +80,8 @@ describe('compilehc', () => {
             try {
                 r = hc[0].apply(c, a);
                 if (r instanceof Promise) return aw(r,hc,1);
-            } catch (e) {
-                return hc[1].call(c, e);
+            } catch (e1) {
+                return hc[1].call(c, e1);
             } finally {
                 hc[2]();
             }
@@ -99,14 +99,7 @@ describe('compilehc', () => {
             () => { console.log('finally') }
         ];
 
-        const expected =
-        `{
-            var r; 
-            r = hc[0].apply(c, a);
-            if (r instanceof Promise) return aw(r,hc,1);
-            hc[1]();
-            return r;
-        }`;
+        const expected = "{var r;try{r = hc[0].apply(c,a);if(r instanceof Promise)return aw(r,hc,1);}finally{hc[1]();}return r;}";
 
         const result = compilehc(typechain, hc);
         expect(normalize(result)).toBe(normalize(expected));
@@ -138,7 +131,7 @@ describe('compilehc', () => {
             var r; 
             r = hc[0].apply(c, a);
             if (r instanceof Promise) return aw(r,hc,1);
-            r = hc[1].call(c, r);
+            r = hc[1].call(c,r);
             return r;
         }`;
 
