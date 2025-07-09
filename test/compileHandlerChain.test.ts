@@ -34,11 +34,60 @@ describe('compilehc', () => {
         const result = compilehc(typechain, hc);
         expect(normalize(result)).toBe(normalize(expected));
     });
+
+    it('should compile a handler chain with only catch handlers (it should simply ignore the catch handlers)', () => {
+        const typechain: TypeChain = [1, 1];
+        const hc = [
+            (error) => `catch1: ${error}`,
+            (error) => `catch2: ${error}`
+        ];
+
+        const expected = `{return a;}`;
+
+        const result = compilehc(typechain, hc);
+        expect(normalize(result)).toBe(normalize(expected));
+    });
     it('should compile a simple handler chain with then', () => {
         const typechain: TypeChain = [0];
         const hc = [() => 'result'];
 
-        const expected =`{return hc[0].apply(c, a);}`;
+        const expected = "{var r;r = hc[0].apply(c,a);return r;}";
+
+        const result = compilehc(typechain, hc);
+        expect(normalize(result)).toBe(normalize(expected));
+    });
+
+     it('should compile a handler chain with only finallys', () => {
+        const typechain: TypeChain = [2,2,2];
+        const hc = [
+            () => { console.log('finally') },
+            () => { console.log('finally2') },
+            () => { console.log('finally3') }
+        ];
+
+        const expected = "{hc[0]();hc[1]();hc[2]();return a;}";
+
+        const result = compilehc(typechain, hc);
+        expect(normalize(result)).toBe(normalize(expected));
+    });
+
+    it('should compile a handler chain with multiple then handlers', () => {
+        const typechain: TypeChain = [0, 0];
+        const hc = [
+            (arg) => `then1: ${arg}`,
+            (arg) => `then2: ${arg}`
+        ];
+
+        //if the last handler is a then, there is no need to check for a Promise
+        // because there is no catch or finally handler after it that would require it
+        const expected =
+            `{
+            var r; 
+            r = hc[0].apply(c, a);
+            if (r instanceof Promise) return aw(r,hc,1);
+            r = hc[1].call(c,r);
+            return r;
+        }`;
 
         const result = compilehc(typechain, hc);
         expect(normalize(result)).toBe(normalize(expected));
@@ -52,7 +101,7 @@ describe('compilehc', () => {
         ];
 
         const expected =
-        `{
+            `{
             var r; 
             try {
                 r = hc[0].apply(c, a);
@@ -75,7 +124,7 @@ describe('compilehc', () => {
         ];
 
         const expected =
-        `{
+            `{
             var r; 
             try {
                 r = hc[0].apply(c, a);
@@ -105,17 +154,7 @@ describe('compilehc', () => {
         expect(normalize(result)).toBe(normalize(expected));
     });
 
-    it('should compile a handler chain with only finally', () => {
-        const typechain: TypeChain = [2];
-        const hc = [
-            () => { console.log('finally') }
-        ];
-
-        const expected = "{hc[0]();return a;}";
-
-        const result = compilehc(typechain, hc);
-        expect(normalize(result)).toBe(normalize(expected));
-    });
+   
 
     it('should compile a handler chain with multiple then handlers', () => {
         const typechain: TypeChain = [0, 0];
@@ -127,7 +166,7 @@ describe('compilehc', () => {
         //if the last handler is a then, there is no need to check for a Promise
         // because there is no catch or finally handler after it that would require it
         const expected =
-        `{
+            `{
             var r; 
             r = hc[0].apply(c, a);
             if (r instanceof Promise) return aw(r,hc,1);
@@ -149,7 +188,7 @@ describe('compilehc', () => {
         ];
 
         const expected =
-        `{
+            `{
             var r; 
             try {
                 r = hc[0].apply(c, a);
@@ -178,7 +217,7 @@ describe('compilehc', () => {
         ];
 
         const expected =
-        `{
+            `{
             var r; 
             try {
                 r = hc[0].apply(c, a);
@@ -208,7 +247,7 @@ describe('compilehc', () => {
         ];
 
         const expected =
-        `{
+            `{
             var r; 
             try {
                 r = hc[0].apply(c, a);
@@ -239,7 +278,7 @@ describe('compilehc', () => {
         ];
 
         const expected =
-        `{
+            `{
             var r; 
             try {
                 r = hc[0].apply(c, a);
@@ -265,18 +304,7 @@ describe('compilehc', () => {
         expect(normalize(result)).toBe(normalize(expected));
     });
 
-    it('should compile a handler chain with only catch handlers (it should simply ignore the catch handlers)', () => {
-        const typechain: TypeChain = [1, 1];
-        const hc = [
-            (error) => `catch1: ${error}`,
-            (error) => `catch2: ${error}`
-        ];
 
-        const expected = `{return a;}`;
-
-        const result = compilehc(typechain, hc);
-        expect(normalize(result)).toBe(normalize(expected));
-    });
 
     it('should compile a handler chain with then-finally-catch pattern', () => {
         const typechain: TypeChain = [0, 2, 1];
@@ -287,7 +315,7 @@ describe('compilehc', () => {
         ];
 
         const expected =
-        `{
+            `{
             var r; 
             try {
                 r = hc[0].apply(c, a);
